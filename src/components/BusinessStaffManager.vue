@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch, onBeforeUnmount } from 'vue'
+import WorkerCard from './WorkerCard.vue'
 import {
   createStaffMember,
   deleteStaffMember,
@@ -11,12 +12,18 @@ const props = defineProps({
   businessId: {
     type: String,
     default: ''
+  },
+  businessServices: {
+    type: Array,
+    default: () => []
   }
 })
 
 const initialFormState = () => ({
   nombre: '',
-  especialidad: '',
+  rol: '',
+  descripcion: '',
+  serviciosAsignados: [],
   activo: true
 })
 
@@ -32,6 +39,24 @@ let unsubscribeStaff = () => {}
 let feedbackTimeout = null
 
 const isEditing = computed(() => Boolean(editingId.value))
+
+const availableServices = computed(() => {
+  if (!Array.isArray(props.businessServices)) return []
+
+  const seen = new Set()
+  const services = []
+
+  props.businessServices.forEach((service) => {
+    const cleaned = String(service ?? '').trim()
+    if (!cleaned) return
+    const key = cleaned.toLowerCase()
+    if (seen.has(key)) return
+    seen.add(key)
+    services.push(cleaned)
+  })
+
+  return services
+})
 
 const clearFeedback = () => {
   feedback.value = { type: '', text: '' }
@@ -88,10 +113,39 @@ onBeforeUnmount(() => {
   clearTimeout(feedbackTimeout)
 })
 
+const toggleService = (service) => {
+  const cleaned = String(service ?? '').trim()
+  if (!cleaned) return
+
+  const lower = cleaned.toLowerCase()
+  const index = form.serviciosAsignados.findIndex(
+    (item) => String(item ?? '').trim().toLowerCase() === lower
+  )
+
+  if (index >= 0) {
+    form.serviciosAsignados.splice(index, 1)
+  } else {
+    form.serviciosAsignados.push(cleaned)
+  }
+}
+
+const isServiceSelected = (service) => {
+  const lower = String(service ?? '').trim().toLowerCase()
+  if (!lower) return false
+
+  return form.serviciosAsignados.some(
+    (item) => String(item ?? '').trim().toLowerCase() === lower
+  )
+}
+
 const startEdit = (worker) => {
   editingId.value = worker.id
   form.nombre = worker.nombre ?? ''
-  form.especialidad = worker.especialidad ?? ''
+  form.rol = worker.rol ?? worker.especialidad ?? ''
+  form.descripcion = worker.descripcion ?? ''
+  form.serviciosAsignados = Array.isArray(worker.serviciosAsignados)
+    ? [...worker.serviciosAsignados]
+    : []
   form.activo = worker.activo !== false
   clearFeedback()
 }
@@ -104,8 +158,24 @@ const cancelEdit = () => {
 const handleSubmit = async () => {
   if (isSubmitting.value || !props.businessId) return
 
-  if (!String(form.nombre ?? '').trim() || !String(form.especialidad ?? '').trim()) {
-    setFeedback('error', 'Nombre y especialidad son obligatorios.')
+  const cleanName = String(form.nombre ?? '').trim()
+  const cleanRole = String(form.rol ?? '').trim()
+  const cleanServices = form.serviciosAsignados
+    .map((service) => String(service ?? '').trim())
+    .filter(Boolean)
+
+  if (!cleanName) {
+    setFeedback('error', 'El nombre del trabajador es obligatorio.')
+    return
+  }
+
+  if (!cleanRole) {
+    setFeedback('error', 'Indica el rol del trabajador (ej: Barbero, Estilista).')
+    return
+  }
+
+  if (!cleanServices.length) {
+    setFeedback('error', 'Selecciona al menos un servicio que ofrezca este trabajador.')
     return
   }
 
@@ -114,9 +184,11 @@ const handleSubmit = async () => {
 
   try {
     const payload = {
-      nombre: form.nombre,
-      especialidad: form.especialidad,
-      activo: form.activo,
+      nombre: cleanName,
+      rol: cleanRole,
+      descripcion: String(form.descripcion ?? '').trim(),
+      serviciosAsignados: cleanServices,
+      activo: Boolean(form.activo),
       negocioId: props.businessId
     }
 
@@ -131,12 +203,17 @@ const handleSubmit = async () => {
     resetForm()
   } catch (error) {
     console.error(error)
-    setFeedback(
-      'error',
-      isEditing.value
-        ? 'No se pudo actualizar el trabajador.'
-        : 'No se pudo agregar el trabajador.'
-    )
+
+    if (error?.code === 'duplicate_staff') {
+      setFeedback('error', 'Ya existe un trabajador con el mismo nombre y rol en este negocio.')
+    } else {
+      setFeedback(
+        'error',
+        isEditing.value
+          ? 'No se pudo actualizar el trabajador.'
+          : 'No se pudo agregar el trabajador.'
+      )
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -217,11 +294,11 @@ const handleDelete = async (worker) => {
         </label>
 
         <label class="field">
-          <span>Especialidad</span>
+          <span>Rol</span>
           <input
-            v-model="form.especialidad"
+            v-model="form.rol"
             type="text"
-            placeholder="Ej: Corte de cabello"
+            placeholder="Ej: Barbero, Estilista"
             :disabled="isSubmitting || !businessId"
             required
           />
@@ -233,8 +310,47 @@ const handleDelete = async (worker) => {
         </label>
       </div>
 
+      <label class="field field-full">
+        <span>Descripción</span>
+        <textarea
+          v-model="form.descripcion"
+          rows="2"
+          placeholder="Describe la experiencia o estilo del trabajador (opcional)."
+          :disabled="isSubmitting || !businessId"
+        ></textarea>
+      </label>
+
+      <fieldset class="services-field" :disabled="isSubmitting || !businessId">
+        <legend>Servicios que ofrece</legend>
+
+        <p v-if="!availableServices.length" class="services-empty">
+          Este negocio aún no tiene servicios configurados. Agrega servicios en
+          <strong>Información del negocio</strong> para poder asignarlos a los trabajadores.
+        </p>
+
+        <div v-else class="services-grid">
+          <label
+            v-for="service in availableServices"
+            :key="service"
+            class="service-option"
+          >
+            <input
+              type="checkbox"
+              :value="service"
+              :checked="isServiceSelected(service)"
+              @change="toggleService(service)"
+            />
+            <span>{{ service }}</span>
+          </label>
+        </div>
+      </fieldset>
+
       <div class="actions-row">
-        <button class="btn btn-primary" type="submit" :disabled="isSubmitting || !businessId">
+        <button
+          class="btn btn-primary"
+          type="submit"
+          :disabled="isSubmitting || !businessId || !availableServices.length"
+        >
           {{
             isSubmitting
               ? isEditing
@@ -264,55 +380,18 @@ const handleDelete = async (worker) => {
         Aún no hay trabajadores registrados para este negocio.
       </p>
 
-      <table v-else class="staff-table">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Especialidad</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="worker in staffList" :key="worker.id">
-            <td>{{ worker.nombre }}</td>
-            <td>{{ worker.especialidad || 'Sin especialidad' }}</td>
-            <td>
-              <span :class="['status-pill', worker.activo ? 'active' : 'inactive']">
-                {{ worker.activo ? 'Activo' : 'Inactivo' }}
-              </span>
-            </td>
-            <td class="row-actions">
-              <button
-                class="btn btn-secondary"
-                type="button"
-                :disabled="processingId === worker.id || isSubmitting"
-                @click="startEdit(worker)"
-              >
-                Editar
-              </button>
-
-              <button
-                class="btn btn-secondary"
-                type="button"
-                :disabled="processingId === worker.id || isSubmitting"
-                @click="handleToggleActive(worker)"
-              >
-                {{ worker.activo ? 'Desactivar' : 'Activar' }}
-              </button>
-
-              <button
-                class="btn btn-danger"
-                type="button"
-                :disabled="processingId === worker.id || isSubmitting"
-                @click="handleDelete(worker)"
-              >
-                Eliminar
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-else class="worker-grid">
+        <WorkerCard
+          v-for="worker in staffList"
+          :key="worker.id"
+          :worker="worker"
+          :processing="processingId === worker.id"
+          :disabled="isSubmitting"
+          @edit="startEdit"
+          @toggle-active="handleToggleActive"
+          @delete="handleDelete"
+        />
+      </div>
     </div>
   </section>
 </template>
@@ -349,16 +428,28 @@ const handleDelete = async (worker) => {
   gap: 0.4rem;
 }
 
+.field-full {
+  grid-column: 1 / -1;
+}
+
 .field span {
   font-weight: 600;
   color: var(--text-dark);
 }
 
-.field input {
+.field input,
+.field textarea {
   border: 1px solid #c7dfd3;
   border-radius: 12px;
   padding: 0.75rem 0.85rem;
   background: #fcfffd;
+  color: var(--text-dark);
+  font-family: inherit;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 64px;
 }
 
 .checkbox-field {
@@ -370,6 +461,46 @@ const handleDelete = async (worker) => {
 .checkbox-field input {
   width: 18px;
   height: 18px;
+}
+
+.services-field {
+  border: 1px solid #d9ecdf;
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.services-field legend {
+  font-weight: 700;
+  color: var(--text-dark);
+  padding: 0 0.35rem;
+}
+
+.services-empty {
+  margin: 0;
+  color: #8b6e1e;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.45rem 0.9rem;
+}
+
+.service-option {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.service-option input {
+  width: 16px;
+  height: 16px;
 }
 
 .actions-row {
@@ -387,39 +518,10 @@ const handleDelete = async (worker) => {
   color: #557148;
 }
 
-.staff-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.staff-table th,
-.staff-table td {
-  text-align: left;
-  padding: 0.7rem;
-  border-bottom: 1px solid #e0eee7;
-}
-
-.row-actions {
-  display: flex;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-}
-
-.status-pill {
-  border-radius: 999px;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.status-pill.active {
-  background: rgba(30, 125, 50, 0.12);
-  color: #1e7d32;
-}
-
-.status-pill.inactive {
-  background: rgba(179, 38, 30, 0.12);
-  color: #b3261e;
+.worker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.9rem;
 }
 
 .feedback-message {

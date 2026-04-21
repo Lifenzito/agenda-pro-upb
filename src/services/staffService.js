@@ -17,12 +17,37 @@ const staffCollection = collection(db, 'trabajadores')
 
 const normalizeValue = (value) => String(value ?? '').trim()
 
-const normalizeStaff = (staffMember) => ({
-  nombre: normalizeValue(staffMember?.nombre),
-  especialidad: normalizeValue(staffMember?.especialidad),
-  activo: Boolean(staffMember?.activo),
-  negocioId: normalizeValue(staffMember?.negocioId)
-})
+const normalizeServiceList = (services) => {
+  if (!Array.isArray(services)) return []
+
+  const seen = new Set()
+  const normalized = []
+
+  services.forEach((service) => {
+    const cleaned = normalizeValue(service)
+    if (!cleaned) return
+    const key = cleaned.toLowerCase()
+    if (seen.has(key)) return
+    seen.add(key)
+    normalized.push(cleaned)
+  })
+
+  return normalized
+}
+
+const normalizeStaff = (staffMember) => {
+  const role = normalizeValue(staffMember?.rol) || normalizeValue(staffMember?.especialidad)
+
+  return {
+    nombre: normalizeValue(staffMember?.nombre),
+    rol: role,
+    especialidad: role,
+    descripcion: normalizeValue(staffMember?.descripcion),
+    serviciosAsignados: normalizeServiceList(staffMember?.serviciosAsignados),
+    activo: staffMember?.activo !== false,
+    negocioId: normalizeValue(staffMember?.negocioId)
+  }
+}
 
 const ensureStaffName = (name) => {
   if (!normalizeValue(name)) {
@@ -40,28 +65,39 @@ const ensureBusinessId = (businessId) => {
   }
 }
 
-const existsDuplicateStaff = async ({ negocioId, nombre, especialidad, excludedId = '' }) => {
+const existsDuplicateStaff = async ({ negocioId, nombre, rol, excludedId = '' }) => {
   const byBusinessQuery = query(staffCollection, where('negocioId', '==', negocioId))
   const snapshot = await getDocs(byBusinessQuery)
 
   const normalizedName = normalizeValue(nombre).toLowerCase()
-  const normalizedSpecialty = normalizeValue(especialidad).toLowerCase()
+  const normalizedRole = normalizeValue(rol).toLowerCase()
 
   return snapshot.docs.some((staffDoc) => {
     if (staffDoc.id === excludedId) return false
 
     const data = staffDoc.data()
     const sameName = normalizeValue(data?.nombre).toLowerCase() === normalizedName
-    const sameSpecialty = normalizeValue(data?.especialidad).toLowerCase() === normalizedSpecialty
+    const existingRole = normalizeValue(data?.rol || data?.especialidad).toLowerCase()
+    const sameRole = existingRole === normalizedRole
 
-    return sameName && sameSpecialty
+    return sameName && sameRole
   })
 }
 
-export const createStaffMember = async ({ nombre, especialidad = '', activo = true, negocioId }) => {
+export const createStaffMember = async ({
+  nombre,
+  rol = '',
+  especialidad = '',
+  descripcion = '',
+  serviciosAsignados = [],
+  activo = true,
+  negocioId
+}) => {
   const normalizedBusinessId = normalizeValue(negocioId)
   const normalizedName = normalizeValue(nombre)
-  const normalizedSpecialty = normalizeValue(especialidad)
+  const normalizedRole = normalizeValue(rol) || normalizeValue(especialidad)
+  const normalizedDescription = normalizeValue(descripcion)
+  const normalizedServices = normalizeServiceList(serviciosAsignados)
 
   ensureBusinessId(normalizedBusinessId)
   ensureStaffName(normalizedName)
@@ -69,7 +105,7 @@ export const createStaffMember = async ({ nombre, especialidad = '', activo = tr
   const duplicated = await existsDuplicateStaff({
     negocioId: normalizedBusinessId,
     nombre: normalizedName,
-    especialidad: normalizedSpecialty
+    rol: normalizedRole
   })
 
   if (duplicated) {
@@ -80,7 +116,10 @@ export const createStaffMember = async ({ nombre, especialidad = '', activo = tr
 
   const payload = {
     nombre: normalizedName,
-    especialidad: normalizedSpecialty,
+    rol: normalizedRole,
+    especialidad: normalizedRole,
+    descripcion: normalizedDescription,
+    serviciosAsignados: normalizedServices,
     activo: Boolean(activo),
     negocioId: normalizedBusinessId,
     createdAt: serverTimestamp(),
@@ -113,19 +152,34 @@ export const updateStaffMember = async (staffId, data) => {
   const nextName = Object.prototype.hasOwnProperty.call(data, 'nombre')
     ? normalizeValue(data.nombre)
     : currentData.nombre
-  const nextSpecialty = Object.prototype.hasOwnProperty.call(data, 'especialidad')
-    ? normalizeValue(data.especialidad)
-    : currentData.especialidad
+
+  const hasRoleUpdate =
+    Object.prototype.hasOwnProperty.call(data, 'rol') ||
+    Object.prototype.hasOwnProperty.call(data, 'especialidad')
+
+  const nextRole = hasRoleUpdate
+    ? normalizeValue(data.rol ?? data.especialidad)
+    : currentData.rol
+
+  const hasDescriptionUpdate = Object.prototype.hasOwnProperty.call(data, 'descripcion')
+  const nextDescription = hasDescriptionUpdate
+    ? normalizeValue(data.descripcion)
+    : currentData.descripcion
+
+  const hasServicesUpdate = Object.prototype.hasOwnProperty.call(data, 'serviciosAsignados')
+  const nextServices = hasServicesUpdate
+    ? normalizeServiceList(data.serviciosAsignados)
+    : currentData.serviciosAsignados
 
   ensureStaffName(nextName)
 
   const businessId = normalizeValue(data?.negocioId || currentData.negocioId)
 
-  if (businessId) {
+  if (businessId && (hasRoleUpdate || Object.prototype.hasOwnProperty.call(data, 'nombre'))) {
     const duplicated = await existsDuplicateStaff({
       negocioId: businessId,
       nombre: nextName,
-      especialidad: nextSpecialty,
+      rol: nextRole,
       excludedId: normalizedStaffId
     })
 
@@ -138,11 +192,17 @@ export const updateStaffMember = async (staffId, data) => {
 
   const payload = {
     ...data,
+    nombre: nextName,
+    rol: nextRole,
+    especialidad: nextRole,
+    descripcion: nextDescription,
+    serviciosAsignados: nextServices,
     updatedAt: serverTimestamp()
   }
 
-  payload.nombre = nextName
-  payload.especialidad = nextSpecialty
+  if (Object.prototype.hasOwnProperty.call(data, 'activo')) {
+    payload.activo = Boolean(data.activo)
+  }
 
   await updateDoc(doc(db, 'trabajadores', normalizedStaffId), payload)
 }
@@ -222,4 +282,20 @@ export const getActiveStaffByBusiness = async (businessId) => {
     })
     .filter((staffMember) => staffMember.activo)
     .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es', { sensitivity: 'base' }))
+}
+
+export const workerCanPerformService = (worker, serviceName) => {
+  const normalizedService = normalizeValue(serviceName).toLowerCase()
+
+  if (!normalizedService) return true
+
+  const services = Array.isArray(worker?.serviciosAsignados)
+    ? worker.serviciosAsignados
+    : []
+
+  if (!services.length) return true
+
+  return services.some(
+    (service) => normalizeValue(service).toLowerCase() === normalizedService
+  )
 }

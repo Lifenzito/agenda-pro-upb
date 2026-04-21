@@ -202,7 +202,11 @@ const handleCancelAppointment = async (appointment) => {
       </section>
 
       <section v-else-if="isStaffSection">
-        <BusinessStaffManager v-if="business?.id" :business-id="business.id" />
+        <BusinessStaffManager
+          v-if="business?.id"
+          :business-id="business.id"
+          :business-services="business?.servicios ?? []"
+        />
 
         <section v-else class="panel-card">
           <p v-if="loadingBusiness">Cargando información del negocio...</p>
