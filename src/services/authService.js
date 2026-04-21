@@ -6,17 +6,34 @@ import {
   signOut,
   updateProfile
 } from 'firebase/auth'
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
+import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import { createBusiness } from './businessService'
 import { ROLE_CLIENTE, ROLE_OWNER } from '../utils/roleHelpers'
 
-const rollbackAuthUser = async (firebaseUser) => {
-  if (!firebaseUser) return
-  try {
-    await deleteUser(firebaseUser)
-  } catch (rollbackError) {
-    console.error('No se pudo revertir el Auth user tras un registro fallido:', rollbackError)
+const rollbackRegistration = async (firebaseUser, userDocRef, negocioId) => {
+  if (negocioId) {
+    try {
+      await deleteDoc(doc(db, 'negocios', negocioId))
+    } catch (e) {
+      console.error('Rollback: no se pudo eliminar el negocio:', e)
+    }
+  }
+
+  if (userDocRef) {
+    try {
+      await deleteDoc(userDocRef)
+    } catch (e) {
+      console.error('Rollback: no se pudo eliminar el perfil de usuario:', e)
+    }
+  }
+
+  if (firebaseUser) {
+    try {
+      await deleteUser(firebaseUser)
+    } catch (e) {
+      console.error('Rollback: no se pudo revertir el Auth user:', e)
+    }
   }
 }
 
@@ -64,7 +81,7 @@ export const registerUser = async ({
     )
   } catch (profileError) {
     console.error('Error guardando el perfil en Firestore:', profileError)
-    await rollbackAuthUser(currentUser)
+    await rollbackRegistration(currentUser, null, null)
     throw profileError
   }
 
@@ -81,7 +98,7 @@ export const registerUser = async ({
     })
   } catch (businessError) {
     console.error('Error creando el negocio del owner:', businessError)
-    await rollbackAuthUser(currentUser)
+    await rollbackRegistration(currentUser, userDocRef, null)
     throw businessError
   }
 
@@ -96,7 +113,7 @@ export const registerUser = async ({
     )
   } catch (linkError) {
     console.error('Error enlazando el negocio al perfil del usuario:', linkError)
-    await rollbackAuthUser(currentUser)
+    await rollbackRegistration(currentUser, userDocRef, negocioId)
     throw linkError
   }
 
