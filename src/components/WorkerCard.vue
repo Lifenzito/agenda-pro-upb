@@ -42,7 +42,7 @@ const isBusy = computed(() => props.processing || props.disabled)
   <article class="worker-card" :class="{ inactive: !worker.activo }">
     <header class="worker-card-header">
       <div class="worker-heading">
-        <h3>{{ worker.nombre || 'Trabajador sin nombre' }}</h3>
+        <h3>{{ worker.nombre || 'Especialista sin nombre' }}</h3>
         <span class="worker-role">{{ roleLabel }}</span>
       </div>
 

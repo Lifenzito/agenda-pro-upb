@@ -33,7 +33,7 @@ let successTimeout = null
 const sectionTitle = computed(() => {
   if (currentSection.value === 'business-profile') return 'Información del negocio'
   if (currentSection.value === 'appointments') return 'Gestionar citas'
-  if (currentSection.value === 'staff') return 'Trabajadores del negocio'
+  if (currentSection.value === 'staff') return 'Especialistas del negocio'
   return 'Resumen del negocio'
 })
 

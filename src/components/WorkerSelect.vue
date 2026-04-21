@@ -28,12 +28,12 @@ const props = defineProps({
   },
   emptyLabel: {
     type: String,
-    default: 'Sin trabajadores activos'
+    default: 'Sin especialistas activos'
   },
   emptyMessage: {
     type: String,
     default:
-      'Este negocio no tiene trabajadores activos. La cita se registrará como “Sin asignar”.'
+      'Este negocio no tiene especialistas activos. La cita se registrará como “Sin asignar”.'
   }
 })
 
@@ -48,7 +48,7 @@ const hasWorkers = computed(() => props.workers.length > 0)
 
 const workerLabel = (worker) => {
   const role = String(worker?.rol ?? worker?.especialidad ?? '').trim()
-  const name = String(worker?.nombre ?? '').trim() || 'Trabajador'
+  const name = String(worker?.nombre ?? '').trim() || 'Especialista'
   return role ? `${name} · ${role}` : name
 }
 </script>
@@ -56,14 +56,14 @@ const workerLabel = (worker) => {
 <template>
   <div class="worker-select">
     <label class="field field-full">
-      <span>Trabajador</span>
+      <span>Especialista</span>
       <select
         v-model="selectedValue"
         :disabled="disabled || loading || !hasWorkers"
         :required="required && hasWorkers"
       >
         <option value="" disabled>
-          {{ loading ? 'Cargando trabajadores...' : hasWorkers ? 'Selecciona un trabajador' : emptyLabel }}
+          {{ loading ? 'Cargando especialistas...' : hasWorkers ? 'Selecciona un especialista' : emptyLabel }}
         </option>
         <option v-for="worker in workers" :key="worker.id" :value="worker.id">
           {{ workerLabel(worker) }}

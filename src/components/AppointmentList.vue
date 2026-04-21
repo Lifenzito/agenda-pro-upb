@@ -77,7 +77,7 @@ const resolveWorkerName = (appointment) => {
             <th>Cliente</th>
             <th>Teléfono</th>
             <th>Servicio</th>
-            <th>Trabajador</th>
+            <th>Especialista</th>
             <th>Fecha</th>
             <th>Hora</th>
             <th>Acciones</th>

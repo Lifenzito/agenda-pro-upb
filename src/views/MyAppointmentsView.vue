@@ -109,7 +109,7 @@ const handleCancelAppointment = async (appointment) => {
   <section class="my-appointments-view app-container">
     <header class="panel-card view-header">
       <h1>Mis citas</h1>
-      <p>Consulta tus citas con trabajador asignado, reagenda cuando lo necesites o cancela en segundos.</p>
+      <p>Consulta tus citas con especialista asignado, reagenda cuando lo necesites o cancela en segundos.</p>
     </header>
 
     <section v-if="authLoading" class="panel-card empty-auth-state">

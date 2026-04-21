@@ -94,7 +94,7 @@ const subscribeToStaff = () => {
     },
     () => {
       loading.value = false
-      setFeedback('error', 'No se pudo cargar la lista de trabajadores.')
+      setFeedback('error', 'No se pudo cargar la lista de especialistas.')
     }
   )
 }
@@ -165,17 +165,17 @@ const handleSubmit = async () => {
     .filter(Boolean)
 
   if (!cleanName) {
-    setFeedback('error', 'El nombre del trabajador es obligatorio.')
+    setFeedback('error', 'El nombre del especialista es obligatorio.')
     return
   }
 
   if (!cleanRole) {
-    setFeedback('error', 'Indica el rol del trabajador (ej: Barbero, Estilista).')
+    setFeedback('error', 'Indica el rol del especialista (ej: Barbero, Estilista).')
     return
   }
 
   if (!cleanServices.length) {
-    setFeedback('error', 'Selecciona al menos un servicio que ofrezca este trabajador.')
+    setFeedback('error', 'Selecciona al menos un servicio que ofrezca este especialista.')
     return
   }
 
@@ -194,10 +194,10 @@ const handleSubmit = async () => {
 
     if (isEditing.value) {
       await updateStaffMember(editingId.value, payload)
-      setFeedback('success', 'Trabajador actualizado correctamente.')
+      setFeedback('success', 'Especialista actualizado correctamente.')
     } else {
       await createStaffMember(payload)
-      setFeedback('success', 'Trabajador agregado correctamente.')
+      setFeedback('success', 'Especialista agregado correctamente.')
     }
 
     resetForm()
@@ -205,13 +205,13 @@ const handleSubmit = async () => {
     console.error(error)
 
     if (error?.code === 'duplicate_staff') {
-      setFeedback('error', 'Ya existe un trabajador con el mismo nombre y rol en este negocio.')
+      setFeedback('error', 'Ya existe un especialista con el mismo nombre y rol en este negocio.')
     } else {
       setFeedback(
         'error',
         isEditing.value
-          ? 'No se pudo actualizar el trabajador.'
-          : 'No se pudo agregar el trabajador.'
+          ? 'No se pudo actualizar el especialista.'
+          : 'No se pudo agregar el especialista.'
       )
     }
   } finally {
@@ -231,10 +231,10 @@ const handleToggleActive = async (worker) => {
       negocioId: props.businessId
     })
 
-    setFeedback('success', worker.activo ? 'Trabajador desactivado.' : 'Trabajador activado.')
+    setFeedback('success', worker.activo ? 'Especialista desactivado.' : 'Especialista activado.')
   } catch (error) {
     console.error(error)
-    setFeedback('error', 'No se pudo cambiar el estado del trabajador.')
+    setFeedback('error', 'No se pudo cambiar el estado del especialista.')
   } finally {
     processingId.value = ''
   }
@@ -244,7 +244,7 @@ const handleDelete = async (worker) => {
   if (!worker?.id || processingId.value) return
 
   const accepted = window.confirm(
-    `¿Seguro que deseas eliminar a ${worker.nombre} de la lista de trabajadores?`
+    `¿Seguro que deseas eliminar a ${worker.nombre} de la lista de especialistas?`
   )
 
   if (!accepted) return
@@ -259,10 +259,10 @@ const handleDelete = async (worker) => {
       cancelEdit()
     }
 
-    setFeedback('success', 'Trabajador eliminado correctamente.')
+    setFeedback('success', 'Especialista eliminado correctamente.')
   } catch (error) {
     console.error(error)
-    setFeedback('error', 'No se pudo eliminar el trabajador.')
+    setFeedback('error', 'No se pudo eliminar el especialista.')
   } finally {
     processingId.value = ''
   }
@@ -270,9 +270,9 @@ const handleDelete = async (worker) => {
 </script>
 
 <template>
-  <section class="panel-card" aria-label="Gestión de trabajadores">
+  <section class="panel-card" aria-label="Gestión de especialistas">
     <div class="card-header">
-      <h2>Trabajadores del negocio</h2>
+      <h2>Especialistas del negocio</h2>
       <p>Agrega y administra el equipo que atenderá las citas de tus clientes.</p>
     </div>
 
@@ -306,7 +306,7 @@ const handleDelete = async (worker) => {
 
         <label class="field checkbox-field">
           <input v-model="form.activo" type="checkbox" :disabled="isSubmitting || !businessId" />
-          <span>Trabajador activo</span>
+          <span>Especialista activo</span>
         </label>
       </div>
 
@@ -315,7 +315,7 @@ const handleDelete = async (worker) => {
         <textarea
           v-model="form.descripcion"
           rows="2"
-          placeholder="Describe la experiencia o estilo del trabajador (opcional)."
+          placeholder="Describe la experiencia o estilo del especialista (opcional)."
           :disabled="isSubmitting || !businessId"
         ></textarea>
       </label>
@@ -325,7 +325,7 @@ const handleDelete = async (worker) => {
 
         <p v-if="!availableServices.length" class="services-empty">
           Este negocio aún no tiene servicios configurados. Agrega servicios en
-          <strong>Información del negocio</strong> para poder asignarlos a los trabajadores.
+          <strong>Información del negocio</strong> para poder asignarlos a los especialistas.
         </p>
 
         <div v-else class="services-grid">
@@ -358,7 +358,7 @@ const handleDelete = async (worker) => {
                 : 'Agregando...'
               : isEditing
                 ? 'Guardar cambios'
-                : 'Agregar trabajador'
+                : 'Agregar especialista'
           }}
         </button>
 
@@ -375,9 +375,9 @@ const handleDelete = async (worker) => {
     </form>
 
     <div class="list-wrapper">
-      <p v-if="loading" class="empty-state">Cargando trabajadores...</p>
+      <p v-if="loading" class="empty-state">Cargando especialistas...</p>
       <p v-else-if="!staffList.length" class="empty-state">
-        Aún no hay trabajadores registrados para este negocio.
+        Aún no hay especialistas registrados para este negocio.
       </p>
 
       <div v-else class="worker-grid">

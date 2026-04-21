@@ -10,7 +10,7 @@ const { user, isAuthenticated } = useAuth()
   <section class="booking-view app-container">
     <header class="view-header">
       <h1>Agendar cita</h1>
-      <p>Reserva tu turno, elige trabajador disponible y consulta tu cita por teléfono para reagendar o cancelar.</p>
+      <p>Reserva tu turno, elige especialista disponible y consulta tu cita por teléfono para reagendar o cancelar.</p>
     </header>
 
     <AppointmentForm
