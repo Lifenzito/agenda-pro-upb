@@ -7,7 +7,7 @@ import { getAuthErrorMessage, registerUser } from '../services/authService'
 import { ROLE_CLIENTE, ROLE_OWNER } from '../utils/roleHelpers'
 
 const router = useRouter()
-const { refreshAuthUser } = useAuth()
+const { refreshAuthUser, setSuppressProfileError } = useAuth()
 
 const form = reactive({
   nombre: '',
@@ -59,6 +59,7 @@ const handleSubmit = async () => {
   }
 
   loading.value = true
+  setSuppressProfileError(true)
 
   try {
     await registerUser({
@@ -69,6 +70,7 @@ const handleSubmit = async () => {
       businessName: form.nombreNegocio
     })
 
+    setSuppressProfileError(false)
     await refreshAuthUser()
 
     message.value = { type: 'success', text: 'Cuenta creada correctamente. Redirigiendo...' }
@@ -77,9 +79,10 @@ const handleSubmit = async () => {
       router.push(isOwnerAccount.value ? '/panel-negocio' : '/mis-citas')
     }, 800)
   } catch (error) {
-    console.error(error)
+    console.error('Registro falló. Código:', error?.code, 'Mensaje:', error?.message, error)
     message.value = { type: 'error', text: getAuthErrorMessage(error) }
   } finally {
+    setSuppressProfileError(false)
     loading.value = false
   }
 }
