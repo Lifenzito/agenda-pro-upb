@@ -26,7 +26,7 @@ const menuItems = [
   },
   {
     id: 'staff',
-    title: 'Trabajadores del negocio',
+    title: 'Especialistas del negocio',
     description: 'Agregar, editar y activar tu equipo'
   }
 ]

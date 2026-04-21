@@ -159,20 +159,20 @@ const workerOptions = computed(() => {
 const hasWorkers = computed(() => eligibleWorkers.value.length > 0)
 const hasActiveWorkers = computed(() => activeWorkers.value.length > 0)
 const workerEmptyLabel = computed(() => {
-  if (!hasActiveWorkers.value) return 'Sin trabajadores activos'
-  if (String(form.servicio ?? '').trim()) return 'Sin trabajadores para este servicio'
-  return 'Sin trabajadores activos'
+  if (!hasActiveWorkers.value) return 'Sin especialistas activos'
+  if (String(form.servicio ?? '').trim()) return 'Sin especialistas para este servicio'
+  return 'Sin especialistas activos'
 })
 const workerEmptyMessage = computed(() => {
   if (!hasActiveWorkers.value) {
-    return 'Este negocio no tiene trabajadores activos. La cita se registrará como “Sin asignar”.'
+    return 'Este negocio no tiene especialistas activos. La cita se registrará como “Sin asignar”.'
   }
 
   if (String(form.servicio ?? '').trim()) {
-    return 'Ningún trabajador activo ofrece el servicio seleccionado. Elige otro servicio o la cita se registrará como “Sin asignar”.'
+    return 'Ningún especialista activo ofrece el servicio seleccionado. Elige otro servicio o la cita se registrará como “Sin asignar”.'
   }
 
-  return 'Este negocio no tiene trabajadores activos. La cita se registrará como “Sin asignar”.'
+  return 'Este negocio no tiene especialistas activos. La cita se registrará como “Sin asignar”.'
 })
 const selectedWorker = computed(() =>
   workerOptions.value.find((worker) => worker.id === form.trabajadorId)
@@ -369,10 +369,10 @@ const handleSubmit = async () => {
       text:
         props.mode === 'create'
           ? hasWorkers.value
-            ? 'Por favor completa negocio, nombre, teléfono, servicio, trabajador, fecha y hora antes de continuar.'
+            ? 'Por favor completa negocio, nombre, teléfono, servicio, especialista, fecha y hora antes de continuar.'
             : 'Por favor completa negocio, nombre, teléfono, servicio, fecha y hora antes de continuar.'
           : hasWorkers.value
-            ? 'Por favor completa nombre, teléfono, servicio, trabajador, fecha y hora antes de continuar.'
+            ? 'Por favor completa nombre, teléfono, servicio, especialista, fecha y hora antes de continuar.'
             : 'Por favor completa nombre, teléfono, servicio, fecha y hora antes de continuar.'
     }
     return
