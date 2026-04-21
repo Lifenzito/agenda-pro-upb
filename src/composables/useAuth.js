@@ -14,7 +14,8 @@ const state = reactive({
   isOwner: false,
   isClient: false,
   loading: true,
-  initialized: false
+  initialized: false,
+  profileError: ''
 })
 
 let stopObserver = null
@@ -26,6 +27,7 @@ const setGuestState = () => {
   state.isAuthenticated = false
   state.isOwner = false
   state.isClient = false
+  state.profileError = ''
 }
 
 const setUserState = async (firebaseUser) => {
@@ -34,27 +36,60 @@ const setUserState = async (firebaseUser) => {
     return
   }
 
+  state.user = {
+    uid: firebaseUser.uid,
+    displayName: firebaseUser.displayName ?? '',
+    email: String(firebaseUser.email ?? '').toLowerCase()
+  }
+  state.isAuthenticated = true
+
   let profile = null
+  let readFailed = false
 
   try {
     profile = await getUserProfile(firebaseUser.uid)
   } catch (error) {
-    console.error(error)
+    console.error('No se pudo leer el perfil del usuario en Firestore:', error)
+    readFailed = true
+  }
+
+  if (readFailed) {
+    state.profile = null
+    state.isOwner = false
+    state.isClient = false
+    state.profileError = 'read_failed'
+    return
+  }
+
+  if (!profile) {
+    state.profile = null
+    state.isOwner = false
+    state.isClient = false
+    state.profileError = 'missing'
+    return
   }
 
   const role = String(profile?.role ?? '').toLowerCase()
   const isLegacyAdmin = role === 'admin'
-  const isOwner = isOwnerRole(role) || isLegacyAdmin
+  const resolvedOwner = isOwnerRole(role) || isLegacyAdmin
+  const resolvedClient = isClientRole(role)
+
+  if (!resolvedOwner && !resolvedClient) {
+    state.profile = profile
+    state.isOwner = false
+    state.isClient = false
+    state.profileError = 'missing'
+    return
+  }
 
   state.user = {
-    uid: firebaseUser.uid,
-    displayName: firebaseUser.displayName ?? profile?.nombre ?? '',
-    email: String(firebaseUser.email ?? '').toLowerCase()
+    ...state.user,
+    displayName: state.user.displayName || profile?.nombre || ''
   }
   state.profile = profile
-  state.isAuthenticated = true
-  state.isOwner = isOwner
-  state.isClient = isClientRole(role) || (!isOwner && !role)
+  state.isOwner = resolvedOwner
+  state.isClient = resolvedClient && !resolvedOwner
+  state.profileError = ''
 }
 
 const initAuth = () => {

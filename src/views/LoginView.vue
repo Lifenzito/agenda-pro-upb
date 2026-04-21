@@ -1,12 +1,12 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { getAuthErrorMessage, loginUser } from '../services/authService'
 
 const router = useRouter()
 const route = useRoute()
-const { refreshAuthUser, isOwner } = useAuth()
+const { refreshAuthUser, isOwner, isClient, profileError } = useAuth()
 
 const form = reactive({
   correo: '',
@@ -15,6 +15,12 @@ const form = reactive({
 
 const loading = ref(false)
 const message = ref('')
+
+onMounted(() => {
+  if (route.query.error === 'profile') {
+    message.value = 'Tu perfil no se pudo cargar. Vuelve a iniciar sesión o contacta al administrador.'
+  }
+})
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -43,7 +49,18 @@ const handleSubmit = async () => {
 
     await refreshAuthUser()
 
-    const defaultRedirect = isOwner.value ? '/panel-negocio' : '/mis-citas'
+    if (profileError.value) {
+      message.value =
+        profileError.value === 'read_failed'
+          ? 'Iniciaste sesión pero no pudimos leer tu perfil. Intenta más tarde o contacta al administrador.'
+          : 'Tu cuenta no tiene un perfil válido. Contacta al administrador para completarla.'
+      return
+    }
+
+    let defaultRedirect = '/'
+    if (isOwner.value) defaultRedirect = '/panel-negocio'
+    else if (isClient.value) defaultRedirect = '/mis-citas'
+
     const redirectPath = String(route.query.redirect ?? defaultRedirect)
     router.push(redirectPath)
   } catch (error) {

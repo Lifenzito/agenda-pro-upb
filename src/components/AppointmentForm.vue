@@ -377,7 +377,7 @@ const handleSubmit = async () => {
       hora: form.hora,
       negocioId: currentBusinessId.value,
       trabajadorId: form.trabajadorId,
-      trabajadorNombre: selectedWorker.value.nombre
+      trabajadorNombre: selectedWorker.value?.nombre ?? ''
     }
 
     if (props.currentUser?.uid) {
@@ -391,7 +391,7 @@ const handleSubmit = async () => {
       hora: form.hora,
       negocioId: currentBusinessId.value,
       trabajadorId: form.trabajadorId,
-      trabajadorNombre: selectedWorker.value.nombre
+      trabajadorNombre: selectedWorker.value?.nombre ?? ''
     }
 
     if (isRescheduleMode.value) {

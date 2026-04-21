@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
-const { user, isAuthenticated, isOwner, loading, performLogout, initAuth } = useAuth()
+const { user, isAuthenticated, isOwner, isClient, profileError, loading, performLogout, initAuth } = useAuth()
 
 initAuth()
 
@@ -20,11 +20,27 @@ const links = computed(() => {
     ]
   }
 
+  if (profileError.value) {
+    return baseLinks
+  }
+
   if (isOwner.value) {
     return [...baseLinks, { to: '/panel-negocio', label: 'Panel del negocio' }]
   }
 
-  return [...baseLinks, { to: '/agendar', label: 'Agendar cita' }, { to: '/mis-citas', label: 'Mis citas' }]
+  if (isClient.value) {
+    return [...baseLinks, { to: '/agendar', label: 'Agendar cita' }, { to: '/mis-citas', label: 'Mis citas' }]
+  }
+
+  return baseLinks
+})
+
+const profileErrorMessage = computed(() => {
+  if (!profileError.value) return ''
+  if (profileError.value === 'read_failed') {
+    return 'No pudimos leer tu perfil. Cierra sesión y vuelve a intentarlo.'
+  }
+  return 'Tu cuenta no tiene un perfil válido. Cierra sesión y contacta al administrador.'
 })
 
 const handleLogout = async () => {
@@ -72,6 +88,10 @@ const handleLogout = async () => {
 
     <div v-if="isAuthenticated && user?.email" class="user-chip app-container">
       Sesión: {{ user.email }}
+    </div>
+
+    <div v-if="profileErrorMessage" class="profile-error app-container" role="alert">
+      {{ profileErrorMessage }}
     </div>
   </header>
 </template>
@@ -150,6 +170,17 @@ const handleLogout = async () => {
   color: #527145;
   font-size: 0.84rem;
   font-weight: 600;
+}
+
+.profile-error {
+  margin-bottom: 0.55rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  background: rgba(220, 53, 69, 0.1);
+  color: #8a1f28;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: 1px solid rgba(220, 53, 69, 0.25);
 }
 
 @media (max-width: 820px) {
