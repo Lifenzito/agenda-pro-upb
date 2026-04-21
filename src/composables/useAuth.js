@@ -15,7 +15,8 @@ const state = reactive({
   isClient: false,
   loading: true,
   initialized: false,
-  profileError: ''
+  profileError: '',
+  suppressProfileError: false
 })
 
 let stopObserver = null
@@ -28,6 +29,12 @@ const setGuestState = () => {
   state.isOwner = false
   state.isClient = false
   state.profileError = ''
+}
+
+const setSuppressProfileError = (value) => {
+  state.suppressProfileError = Boolean(value)
+  if (!state.suppressProfileError) return
+  if (state.profileError) state.profileError = ''
 }
 
 const setUserState = async (firebaseUser) => {
@@ -57,7 +64,7 @@ const setUserState = async (firebaseUser) => {
     state.profile = null
     state.isOwner = false
     state.isClient = false
-    state.profileError = 'read_failed'
+    state.profileError = state.suppressProfileError ? '' : 'read_failed'
     return
   }
 
@@ -65,7 +72,7 @@ const setUserState = async (firebaseUser) => {
     state.profile = null
     state.isOwner = false
     state.isClient = false
-    state.profileError = 'missing'
+    state.profileError = state.suppressProfileError ? '' : 'missing'
     return
   }
 
@@ -78,7 +85,7 @@ const setUserState = async (firebaseUser) => {
     state.profile = profile
     state.isOwner = false
     state.isClient = false
-    state.profileError = 'missing'
+    state.profileError = state.suppressProfileError ? '' : 'missing'
     return
   }
 
@@ -141,5 +148,6 @@ export const useAuth = () => ({
   initAuth,
   refreshAuthUser,
   performLogout,
-  disposeAuth
+  disposeAuth,
+  setSuppressProfileError
 })

@@ -159,8 +159,9 @@ export const getUserProfile = async (uid) => {
 
 export const getAuthErrorMessage = (error) => {
   const errorCode = error?.code ?? ''
+  const rawMessage = String(error?.message ?? '').trim()
 
-  if (error?.message === 'business_name_required') {
+  if (rawMessage === 'business_name_required') {
     return 'Debes ingresar el nombre del negocio para completar el registro.'
   }
 
@@ -177,7 +178,34 @@ export const getAuthErrorMessage = (error) => {
       return 'Correo o contraseña incorrectos.'
     case 'auth/too-many-requests':
       return 'Demasiados intentos. Intenta nuevamente más tarde.'
+    case 'auth/operation-not-allowed':
+      return 'El registro con email/contraseña no está habilitado. Actívalo en Firebase Console → Authentication → Sign-in method.'
+    case 'auth/network-request-failed':
+      return 'No hay conexión con Firebase. Verifica tu red o si un bloqueador está interfiriendo (error: auth/network-request-failed).'
+    case 'auth/api-key-not-valid':
+    case 'auth/invalid-api-key':
+      return 'La API key de Firebase no es válida. Revisa src/services/firebase.js.'
+    case 'auth/admin-restricted-operation':
+      return 'Firebase bloqueó la operación por restricciones de administrador (auth/admin-restricted-operation).'
+    case 'auth/internal-error':
+      return `Error interno de Firebase Auth (auth/internal-error). Detalle: ${rawMessage || 'sin detalle'}`
+    case 'permission-denied':
+      return 'Firestore rechazó la escritura (permission-denied). Revisa las reglas de seguridad para la colección "usuarios" / "negocios".'
+    case 'unavailable':
+      return 'Firestore no está disponible temporalmente (unavailable). Intenta de nuevo en unos segundos.'
+    case 'resource-exhausted':
+      return 'Se alcanzó el límite de uso de Firestore (resource-exhausted).'
+    case 'failed-precondition':
+      return 'Firestore rechazó la operación por una precondición fallida (failed-precondition).'
+    case 'unauthenticated':
+      return 'Firestore requiere autenticación válida (unauthenticated).'
     default:
+      if (errorCode) {
+        return `Error de Firebase: ${errorCode}${rawMessage ? ` — ${rawMessage}` : ''}`
+      }
+      if (rawMessage) {
+        return `Error: ${rawMessage}`
+      }
       return 'Ocurrió un error. Intenta nuevamente.'
   }
 }
