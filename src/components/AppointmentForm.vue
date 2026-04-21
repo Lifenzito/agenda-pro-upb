@@ -23,7 +23,7 @@ import {
 } from '../utils/dateTimeUtils'
 import { getAvailableSlots } from '../utils/timeSlots'
 import { getBusinesses } from '../services/businessService'
-import { getActiveStaffByBusiness } from '../services/staffService'
+import { getActiveStaffByBusiness, workerCanPerformService } from '../services/staffService'
 
 const props = defineProps({
   mode: {
@@ -128,8 +128,15 @@ const availableTimeSlots = computed(() =>
     excludedHour: isEditing.value ? props.appointmentToEdit?.hora ?? '' : ''
   })
 )
+const eligibleWorkers = computed(() => {
+  const service = String(form.servicio ?? '').trim()
+
+  if (!service) return [...activeWorkers.value]
+
+  return activeWorkers.value.filter((worker) => workerCanPerformService(worker, service))
+})
 const workerOptions = computed(() => {
-  const options = [...activeWorkers.value]
+  const options = [...eligibleWorkers.value]
 
   if (!form.trabajadorId || !form.trabajadorNombre) {
     return options
@@ -141,6 +148,7 @@ const workerOptions = computed(() => {
     options.push({
       id: form.trabajadorId,
       nombre: form.trabajadorNombre,
+      rol: 'No disponible',
       especialidad: 'No disponible',
       activo: false
     })
@@ -148,7 +156,24 @@ const workerOptions = computed(() => {
 
   return options
 })
-const hasWorkers = computed(() => activeWorkers.value.length > 0)
+const hasWorkers = computed(() => eligibleWorkers.value.length > 0)
+const hasActiveWorkers = computed(() => activeWorkers.value.length > 0)
+const workerEmptyLabel = computed(() => {
+  if (!hasActiveWorkers.value) return 'Sin trabajadores activos'
+  if (String(form.servicio ?? '').trim()) return 'Sin trabajadores para este servicio'
+  return 'Sin trabajadores activos'
+})
+const workerEmptyMessage = computed(() => {
+  if (!hasActiveWorkers.value) {
+    return 'Este negocio no tiene trabajadores activos. La cita se registrará como “Sin asignar”.'
+  }
+
+  if (String(form.servicio ?? '').trim()) {
+    return 'Ningún trabajador activo ofrece el servicio seleccionado. Elige otro servicio o la cita se registrará como “Sin asignar”.'
+  }
+
+  return 'Este negocio no tiene trabajadores activos. La cita se registrará como “Sin asignar”.'
+})
 const selectedWorker = computed(() =>
   workerOptions.value.find((worker) => worker.id === form.trabajadorId)
 )
@@ -196,7 +221,7 @@ const loadWorkersByBusiness = async () => {
       String(props.appointmentToEdit?.negocioId ?? '') === String(currentBusinessId.value) &&
       String(props.appointmentToEdit?.trabajadorId ?? '').trim().length > 0
 
-    if (!hasWorkers.value && !canKeepLegacyWorker) {
+    if (!activeWorkers.value.length && !canKeepLegacyWorker) {
       form.trabajadorId = ''
       return
     }
@@ -295,6 +320,27 @@ watch(
   (workerId) => {
     const worker = workerOptions.value.find((item) => item.id === workerId)
     form.trabajadorNombre = worker?.nombre ?? ''
+  }
+)
+
+watch(
+  () => form.servicio,
+  () => {
+    if (!form.trabajadorId) return
+
+    const canKeepLegacyWorker =
+      isEditing.value &&
+      String(props.appointmentToEdit?.trabajadorId ?? '') === form.trabajadorId
+
+    if (canKeepLegacyWorker) return
+
+    const stillEligible = eligibleWorkers.value.some(
+      (worker) => worker.id === form.trabajadorId
+    )
+
+    if (!stillEligible) {
+      form.trabajadorId = ''
+    }
   }
 )
 
@@ -524,6 +570,8 @@ const handleCancelEdit = () => {
             :loading="loadingWorkers"
             :disabled="isSubmitting || !currentBusinessId"
             :required="hasWorkers"
+            :empty-label="workerEmptyLabel"
+            :empty-message="workerEmptyMessage"
           />
         </div>
 

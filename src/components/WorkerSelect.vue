@@ -25,6 +25,15 @@ const props = defineProps({
   showEmptyMessage: {
     type: Boolean,
     default: true
+  },
+  emptyLabel: {
+    type: String,
+    default: 'Sin trabajadores activos'
+  },
+  emptyMessage: {
+    type: String,
+    default:
+      'Este negocio no tiene trabajadores activos. La cita se registrará como “Sin asignar”.'
   }
 })
 
@@ -36,6 +45,12 @@ const selectedValue = computed({
 })
 
 const hasWorkers = computed(() => props.workers.length > 0)
+
+const workerLabel = (worker) => {
+  const role = String(worker?.rol ?? worker?.especialidad ?? '').trim()
+  const name = String(worker?.nombre ?? '').trim() || 'Trabajador'
+  return role ? `${name} · ${role}` : name
+}
 </script>
 
 <template>
@@ -48,16 +63,16 @@ const hasWorkers = computed(() => props.workers.length > 0)
         :required="required && hasWorkers"
       >
         <option value="" disabled>
-          {{ loading ? 'Cargando trabajadores...' : hasWorkers ? 'Selecciona un trabajador' : 'Sin trabajadores activos' }}
+          {{ loading ? 'Cargando trabajadores...' : hasWorkers ? 'Selecciona un trabajador' : emptyLabel }}
         </option>
         <option v-for="worker in workers" :key="worker.id" :value="worker.id">
-          {{ worker.nombre }}{{ worker.especialidad ? ` · ${worker.especialidad}` : '' }}
+          {{ workerLabel(worker) }}
         </option>
       </select>
     </label>
 
     <small v-if="showEmptyMessage && !loading && !hasWorkers" class="worker-helper">
-      Este negocio no tiene trabajadores activos. La cita se registrará como “Sin asignar”.
+      {{ emptyMessage }}
     </small>
   </div>
 </template>

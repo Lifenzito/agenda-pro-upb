@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   business: {
@@ -16,7 +16,9 @@ const form = reactive({
   nombre: '',
   horarioInicio: '08:00',
   horarioFin: '18:00',
-  servicios: ''
+  servicios: '',
+  fotoPerfil: '',
+  banner: ''
 })
 
 const loading = ref(false)
@@ -29,9 +31,30 @@ watch(
     form.horarioInicio = business?.horarioInicio ?? '08:00'
     form.horarioFin = business?.horarioFin ?? '18:00'
     form.servicios = Array.isArray(business?.servicios) ? business.servicios.join(', ') : ''
+    form.fotoPerfil = business?.fotoPerfil ?? ''
+    form.banner = business?.banner ?? ''
     message.value = { type: '', text: '' }
   },
   { immediate: true }
+)
+
+const isValidUrl = (value) => {
+  const trimmed = String(value ?? '').trim()
+  if (!trimmed) return true
+  try {
+    const parsed = new URL(trimmed)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+const profilePreview = computed(() =>
+  isValidUrl(form.fotoPerfil) ? String(form.fotoPerfil ?? '').trim() : ''
+)
+
+const bannerPreview = computed(() =>
+  isValidUrl(form.banner) ? String(form.banner ?? '').trim() : ''
 )
 
 const handleSave = async () => {
@@ -52,6 +75,16 @@ const handleSave = async () => {
     return
   }
 
+  if (!isValidUrl(form.fotoPerfil)) {
+    message.value = { type: 'error', text: 'La URL de la foto de perfil no es válida.' }
+    return
+  }
+
+  if (!isValidUrl(form.banner)) {
+    message.value = { type: 'error', text: 'La URL del banner no es válida.' }
+    return
+  }
+
   loading.value = true
 
   try {
@@ -64,7 +97,9 @@ const handleSave = async () => {
       nombre: form.nombre.trim(),
       horarioInicio: form.horarioInicio,
       horarioFin: form.horarioFin,
-      servicios
+      servicios,
+      fotoPerfil: String(form.fotoPerfil ?? '').trim(),
+      banner: String(form.banner ?? '').trim()
     })
 
     message.value = { type: 'success', text: 'Información del negocio actualizada.' }
@@ -112,6 +147,36 @@ const handleSave = async () => {
         />
       </label>
 
+      <div class="media-grid">
+        <label class="field">
+          <span>Foto de perfil (URL)</span>
+          <input
+            v-model="form.fotoPerfil"
+            type="url"
+            placeholder="https://..."
+            :disabled="loading"
+          />
+          <div class="media-preview profile" aria-hidden="true">
+            <img v-if="profilePreview" :src="profilePreview" alt="Vista previa de la foto de perfil" />
+            <span v-else class="media-placeholder">Sin foto de perfil</span>
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Banner (URL)</span>
+          <input
+            v-model="form.banner"
+            type="url"
+            placeholder="https://..."
+            :disabled="loading"
+          />
+          <div class="media-preview banner" aria-hidden="true">
+            <img v-if="bannerPreview" :src="bannerPreview" alt="Vista previa del banner" />
+            <span v-else class="media-placeholder">Sin banner</span>
+          </div>
+        </label>
+      </div>
+
       <button class="btn btn-primary" type="submit" :disabled="loading">
         {{ loading ? 'Guardando...' : 'Guardar cambios' }}
       </button>
@@ -144,7 +209,8 @@ p {
   gap: 0.8rem;
 }
 
-.hours-grid {
+.hours-grid,
+.media-grid {
   display: grid;
   gap: 0.8rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -174,6 +240,40 @@ p {
   outline: none;
 }
 
+.media-preview {
+  border: 1px dashed #c7dfd3;
+  border-radius: 12px;
+  background: #f5fbf6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #6b855f;
+  font-size: 0.85rem;
+}
+
+.media-preview.profile {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+}
+
+.media-preview.banner {
+  width: 100%;
+  height: 120px;
+}
+
+.media-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-placeholder {
+  padding: 0 0.4rem;
+  text-align: center;
+}
+
 .feedback-message {
   margin: 0;
   border-radius: 10px;
@@ -192,7 +292,8 @@ p {
 }
 
 @media (max-width: 760px) {
-  .hours-grid {
+  .hours-grid,
+  .media-grid {
     grid-template-columns: 1fr;
   }
 }
