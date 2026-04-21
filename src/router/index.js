@@ -79,16 +79,25 @@ router.beforeEach(async (to) => {
     }
   }
 
+  if (to.meta.requiresAuth && auth.profileError.value) {
+    return {
+      path: '/login',
+      query: { error: 'profile' }
+    }
+  }
+
   if (to.meta.ownerOnly && !auth.isOwner.value) {
-    return { path: '/mis-citas' }
+    return { path: auth.isClient.value ? '/mis-citas' : '/' }
   }
 
   if (to.meta.clientOnly && auth.isOwner.value) {
     return { path: '/panel-negocio' }
   }
 
-  if (to.meta.guestOnly && auth.isAuthenticated.value) {
-    return { path: auth.isOwner.value ? '/panel-negocio' : '/mis-citas' }
+  if (to.meta.guestOnly && auth.isAuthenticated.value && !auth.profileError.value) {
+    if (auth.isOwner.value) return { path: '/panel-negocio' }
+    if (auth.isClient.value) return { path: '/mis-citas' }
+    return { path: '/' }
   }
 
   return true

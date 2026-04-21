@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
@@ -10,6 +11,15 @@ import { auth, db } from './firebase'
 import { createBusiness } from './businessService'
 import { ROLE_CLIENTE, ROLE_OWNER } from '../utils/roleHelpers'
 
+const rollbackAuthUser = async (firebaseUser) => {
+  if (!firebaseUser) return
+  try {
+    await deleteUser(firebaseUser)
+  } catch (rollbackError) {
+    console.error('No se pudo revertir el Auth user tras un registro fallido:', rollbackError)
+  }
+}
+
 export const registerUser = async ({
   nombre,
   correo,
@@ -19,49 +29,78 @@ export const registerUser = async ({
 }) => {
   const normalizedEmail = String(correo).trim().toLowerCase()
   const normalizedAccountType = accountType === ROLE_OWNER ? ROLE_OWNER : ROLE_CLIENTE
+  const cleanName = String(nombre ?? '').trim()
+  const cleanBusinessName = String(businessName ?? '').trim()
+
+  if (normalizedAccountType === ROLE_OWNER && !cleanBusinessName) {
+    throw new Error('business_name_required')
+  }
+
+  const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password)
+  const currentUser = userCredential.user
+  const userDocRef = doc(db, 'usuarios', currentUser.uid)
+
+  if (cleanName) {
+    try {
+      await updateProfile(currentUser, { displayName: cleanName })
+    } catch (displayNameError) {
+      console.error('No se pudo establecer el displayName del usuario:', displayNameError)
+    }
+  }
 
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password)
-    const currentUser = userCredential.user
-    let negocioId = null
-
-    if (nombre?.trim()) {
-      await updateProfile(currentUser, { displayName: nombre.trim() })
-    }
-
-    if (normalizedAccountType === ROLE_OWNER) {
-      const cleanBusinessName = String(businessName).trim()
-
-      if (!cleanBusinessName) {
-        throw new Error('business_name_required')
-      }
-
-      negocioId = await createBusiness({
-        nombre: cleanBusinessName,
-        ownerId: currentUser.uid,
-        ownerEmail: normalizedEmail
-      })
-    }
-
     await setDoc(
-      doc(db, 'usuarios', currentUser.uid),
+      userDocRef,
       {
         uid: currentUser.uid,
-        nombre: nombre?.trim() ?? '',
+        nombre: cleanName,
         email: normalizedEmail,
         role: normalizedAccountType,
-        negocioId,
+        negocioId: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       },
       { merge: true }
     )
-
-    return currentUser
-  } catch (error) {
-    console.error(error)
-    throw error
+  } catch (profileError) {
+    console.error('Error guardando el perfil en Firestore:', profileError)
+    await rollbackAuthUser(currentUser)
+    throw profileError
   }
+
+  if (normalizedAccountType !== ROLE_OWNER) {
+    return currentUser
+  }
+
+  let negocioId
+  try {
+    negocioId = await createBusiness({
+      nombre: cleanBusinessName,
+      ownerId: currentUser.uid,
+      ownerEmail: normalizedEmail
+    })
+  } catch (businessError) {
+    console.error('Error creando el negocio del owner:', businessError)
+    await rollbackAuthUser(currentUser)
+    throw businessError
+  }
+
+  try {
+    await setDoc(
+      userDocRef,
+      {
+        negocioId,
+        updatedAt: serverTimestamp()
+      },
+      { merge: true }
+    )
+  } catch (linkError) {
+    console.error('Error enlazando el negocio al perfil del usuario:', linkError)
+    await rollbackAuthUser(currentUser)
+    throw linkError
+  }
+
+  return currentUser
 }
 
 export const loginUser = async ({ correo, password }) => {
