@@ -23,8 +23,8 @@ const heroActions = computed(() => {
   }
 
   return {
-    primary: { type: 'route', to: '/agendar', label: 'Agendar cita' },
-    secondary: { type: 'route', to: '/mis-citas', label: 'Mis citas' }
+    primary: { type: 'route', to: '/mis-citas', label: 'Mis citas' },
+    secondary: { type: 'action', action: 'logout', label: 'Cerrar sesión' }
   }
 })
 
