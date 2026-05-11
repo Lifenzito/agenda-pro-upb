@@ -9,7 +9,44 @@ import { getActiveStaffByBusiness } from '../services/staffService'
 
 const route = useRoute()
 const router = useRouter()
-const { user } = useAuth()
+const {
+  user,
+  isAuthenticated,
+  isOwner,
+  isClient,
+  loading: authLoading,
+  performLogout
+} = useAuth()
+
+const publicPath = computed(() => `/negocio/${route.params.slug ?? ''}`)
+const canBook = computed(() => isAuthenticated.value && isClient.value && !isOwner.value)
+const showOwnerNotice = computed(() => isAuthenticated.value && isOwner.value)
+const showGuestCta = computed(() => !authLoading.value && !isAuthenticated.value)
+
+const goToLogin = () => {
+  router.push({ path: '/login', query: { redirect: publicPath.value } })
+}
+
+const goToRegister = () => {
+  router.push({ path: '/registro', query: { redirect: publicPath.value } })
+}
+
+const goToOwnerPanel = () => {
+  router.push('/panel-negocio')
+}
+
+const loggingOut = ref(false)
+const handleLogout = async () => {
+  if (loggingOut.value) return
+  loggingOut.value = true
+  try {
+    await performLogout()
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loggingOut.value = false
+  }
+}
 
 const business = ref(null)
 const workers = ref([])
@@ -136,7 +173,45 @@ const goHome = () => {
         </p>
       </section>
 
-      <section class="form-card">
+      <section v-if="authLoading" class="panel-card auth-gate">
+        <p>Cargando tu sesión…</p>
+      </section>
+
+      <section v-else-if="showOwnerNotice" class="panel-card auth-gate owner-notice">
+        <h2>Vista pública de administrador</h2>
+        <p>
+          Estás viendo tu página pública como administrador. Para agendar una cita, entra
+          con una cuenta de cliente.
+        </p>
+        <div class="auth-actions">
+          <button class="btn btn-primary" type="button" @click="goToOwnerPanel">
+            Ir al panel del negocio
+          </button>
+          <button
+            class="btn btn-secondary"
+            type="button"
+            :disabled="loggingOut"
+            @click="handleLogout"
+          >
+            {{ loggingOut ? 'Cerrando…' : 'Cerrar sesión' }}
+          </button>
+        </div>
+      </section>
+
+      <section v-else-if="showGuestCta" class="panel-card auth-gate guest-cta">
+        <h2>Agenda en {{ businessName }}</h2>
+        <p>Inicia sesión con una cuenta de cliente para reservar una cita en este negocio.</p>
+        <div class="auth-actions">
+          <button class="btn btn-primary" type="button" @click="goToLogin">
+            Iniciar sesión para agendar
+          </button>
+          <button class="btn btn-secondary" type="button" @click="goToRegister">
+            Crear cuenta de cliente
+          </button>
+        </div>
+      </section>
+
+      <section v-else-if="canBook" class="form-card">
         <AppointmentForm
           mode="create"
           :card-title="`Agenda en ${businessName}`"
@@ -145,6 +220,13 @@ const goHome = () => {
           :locked-business-id="business.id"
           @saved="handleSaved"
         />
+      </section>
+
+      <section v-else class="panel-card auth-gate">
+        <p>
+          Tu cuenta no puede agendar citas en este negocio. Si crees que es un error, contacta
+          al administrador del negocio.
+        </p>
       </section>
     </template>
   </main>
@@ -244,5 +326,35 @@ const goHome = () => {
 
 .form-card {
   display: block;
+}
+
+.auth-gate {
+  display: grid;
+  gap: 0.6rem;
+  text-align: center;
+  padding: 1.5rem 1.25rem;
+}
+
+.auth-gate h2 {
+  margin: 0;
+  color: var(--primary);
+}
+
+.auth-gate p {
+  margin: 0;
+  color: #4f6a45;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+
+.owner-notice {
+  border: 1px solid #c7dfd3;
+  background: #f1f8f2;
 }
 </style>
