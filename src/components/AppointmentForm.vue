@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Formulario de creación/edición de citas.
+ * Gestiona validaciones de negocio, horario, teléfono y trabajador asignado.
+ */
 import { computed, reactive, ref, watch } from 'vue'
 import {
   createAppointment,

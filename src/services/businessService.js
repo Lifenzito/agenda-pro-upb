@@ -1,3 +1,7 @@
+/**
+ * Servicio de negocios.
+ * Encapsula operaciones CRUD sobre la colección `negocios`.
+ */
 import {
   addDoc,
   collection,

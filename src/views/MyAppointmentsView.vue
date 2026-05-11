@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Vista de citas del cliente.
+ * Permite consultar, filtrar y gestionar reservas asociadas a la cuenta autenticada.
+ */
 import { onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppointmentForm from '../components/AppointmentForm.vue'

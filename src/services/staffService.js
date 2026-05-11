@@ -1,3 +1,7 @@
+/**
+ * Servicio de trabajadores.
+ * Administra alta/edición/baja, normalización y consultas de personal por negocio.
+ */
 import {
   addDoc,
   collection,

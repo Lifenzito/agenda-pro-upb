@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Vista de inicio de sesión.
+ * Gestiona autenticación y redirección según el rol del usuario.
+ */
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'

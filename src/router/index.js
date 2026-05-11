@@ -1,3 +1,7 @@
+/**
+ * Configuración de rutas de AgendaPro.
+ * Incluye guards para acceso autenticado, rol owner y rol cliente.
+ */
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import HomeView from '../views/HomeView.vue'

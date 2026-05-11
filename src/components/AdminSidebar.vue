@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Sidebar del panel de administración.
+ * Controla navegación interna y selección de secciones del owner.
+ */
 const props = defineProps({
   currentSection: {
     type: String,

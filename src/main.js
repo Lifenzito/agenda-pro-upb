@@ -1,3 +1,7 @@
+/**
+ * Punto de entrada de Vue.
+ * Inicializa autenticación y monta la app una vez se conoce el estado de sesión.
+ */
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'

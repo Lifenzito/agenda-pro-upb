@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Dashboard del owner.
+ * Presenta métricas y accesos rápidos del panel administrativo.
+ */
 import { computed } from 'vue'
 
 const props = defineProps({

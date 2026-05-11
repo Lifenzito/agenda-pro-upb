@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Búsqueda de citas por cliente.
+ * Permite consultar reservas usando datos de contacto.
+ */
 import { computed, ref } from 'vue'
 import {
   deleteAppointment,

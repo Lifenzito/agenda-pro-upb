@@ -1,3 +1,7 @@
+/**
+ * Servicio de citas.
+ * Maneja creación, actualización, eliminación y consultas de disponibilidad.
+ */
 import {
   addDoc,
   collection,

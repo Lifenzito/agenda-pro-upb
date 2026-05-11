@@ -1,3 +1,7 @@
+/**
+ * Utilidades de telefonía.
+ * Normaliza, valida y formatea números para registro y búsqueda de citas.
+ */
 export const COUNTRY_OPTIONS = [
   { code: '+57', country: 'Colombia', minLength: 10, maxLength: 10 },
   { code: '+1', country: 'Estados Unidos / Canadá', minLength: 10, maxLength: 10 },

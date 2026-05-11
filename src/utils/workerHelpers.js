@@ -1,3 +1,7 @@
+/**
+ * Helpers de trabajadores.
+ * Proveen normalización, validación y filtrado por servicio para perfiles del equipo.
+ */
 const DEFAULT_WORKER_ROLE = 'Profesional'
 const DEFAULT_WORKER_DESCRIPTION = 'Perfil profesional pendiente por completar.'
 const DEFAULT_WORKER_RATING = 4.5

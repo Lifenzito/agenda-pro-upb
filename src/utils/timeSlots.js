@@ -1,3 +1,6 @@
+/**
+ * Utilidades para cálculo de horarios disponibles en formularios de cita.
+ */
 export const DEFAULT_TIME_SLOTS = [
   '08:00',
   '09:00',

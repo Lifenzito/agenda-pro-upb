@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Barra de navegación global.
+ * Muestra enlaces de navegación y acciones de sesión según el estado del usuario.
+ */
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useRouter } from 'vue-router'

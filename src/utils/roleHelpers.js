@@ -1,3 +1,6 @@
+/**
+ * Helpers de roles de usuario usados en autenticación y navegación.
+ */
 export const ROLE_CLIENTE = 'cliente'
 export const ROLE_OWNER = 'owner'
 

@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Listado de citas.
+ * Permite visualizar y operar citas según contexto (admin o cliente).
+ */
 const props = defineProps({
   appointments: {
     type: Array,

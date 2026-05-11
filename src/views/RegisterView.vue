@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Vista de registro.
+ * Maneja creación de cuentas cliente/owner y validaciones iniciales.
+ */
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import RegisterTypeSelector from '../components/RegisterTypeSelector.vue'

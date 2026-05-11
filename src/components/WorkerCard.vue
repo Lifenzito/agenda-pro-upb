@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Tarjeta visual de trabajador (formato compacto).
+ * Se usa para representar información resumida del personal.
+ */
 import { computed } from 'vue'
 
 const props = defineProps({

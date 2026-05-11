@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Vista de inicio.
+ * Presenta la landing principal y rutas de entrada a los flujos clave.
+ */
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useRouter } from 'vue-router'

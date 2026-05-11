@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Selector de tipo de cuenta en registro.
+ * Diferencia flujos entre cliente y propietario de negocio.
+ */
 import { ROLE_CLIENTE, ROLE_OWNER } from '../utils/roleHelpers'
 
 const props = defineProps({

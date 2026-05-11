@@ -1,3 +1,7 @@
+/**
+ * Servicio de autenticación y perfiles.
+ * Gestiona registro/login/logout y sincronización del documento de usuario en Firestore.
+ */
 import {
   createUserWithEmailAndPassword,
   deleteUser,

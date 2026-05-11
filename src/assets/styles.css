@@ -1,3 +1,7 @@
+/*
+ * Hoja de estilos globales de AgendaPro.
+ * Define variables de tema, layout base y estilos utilitarios compartidos.
+ */
 :root {
   --primary: #006747;
   --soft-bg: #e5f9f2;

@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Campo compuesto de teléfono.
+ * Integra prefijo internacional, entrada local y mensajes de validación.
+ */
 import { computed, watch } from 'vue'
 import {
   COUNTRY_OPTIONS,

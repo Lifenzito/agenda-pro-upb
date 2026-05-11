@@ -1,3 +1,7 @@
+/**
+ * Inicialización de Firebase para la aplicación.
+ * Expone instancias compartidas de `auth` y `db`.
+ */
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { initializeFirestore } from 'firebase/firestore'

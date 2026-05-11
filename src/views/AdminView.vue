@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Vista del panel de negocio.
+ * Agrupa módulos de perfil, trabajadores y administración de citas.
+ */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AdminSidebar from '../components/AdminSidebar.vue'
 import AdminDashboard from '../components/AdminDashboard.vue'

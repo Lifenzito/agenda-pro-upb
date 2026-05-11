@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Tarjeta de perfil extendido de trabajador.
+ * Presenta detalles, servicios, estado y acciones operativas del colaborador.
+ */
 import { computed } from 'vue'
 import {
   formatWorkerExperience,

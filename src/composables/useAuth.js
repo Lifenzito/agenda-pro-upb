@@ -1,3 +1,7 @@
+/**
+ * Composable global de autenticación.
+ * Centraliza estado de usuario, perfil, roles y ciclo de inicialización de sesión.
+ */
 import { reactive, toRefs } from 'vue'
 import {
   getCurrentAuthUser,

@@ -1,3 +1,6 @@
+/**
+ * Utilidades de fecha y hora para validaciones de agenda.
+ */
 export const getTodayDateString = () => {
   const now = new Date()
   const offsetNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000)

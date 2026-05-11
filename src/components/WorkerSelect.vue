@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Selector de trabajador para la cita.
+ * Expone opciones disponibles y controla la selección enlazada al formulario.
+ */
 import { computed } from 'vue'
 
 const props = defineProps({

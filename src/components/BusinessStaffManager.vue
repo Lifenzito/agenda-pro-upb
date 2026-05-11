@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Gestor de trabajadores del negocio.
+ * Administra alta/edición/estado/eliminación del equipo de atención.
+ */
 import { computed, reactive, ref, watch, onBeforeUnmount } from 'vue'
 import WorkerCard from './WorkerCard.vue'
 import {

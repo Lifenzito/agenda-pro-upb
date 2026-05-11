@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Tarjeta de perfil del negocio.
+ * Muestra y permite editar datos generales, horarios y servicios del establecimiento.
+ */
 import { computed, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
