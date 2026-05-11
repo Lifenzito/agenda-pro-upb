@@ -1,12 +1,13 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import RegisterTypeSelector from '../components/RegisterTypeSelector.vue'
 import { useAuth } from '../composables/useAuth'
 import { getAuthErrorMessage, registerUser } from '../services/authService'
 import { ROLE_CLIENTE, ROLE_OWNER } from '../utils/roleHelpers'
 
 const router = useRouter()
+const route = useRoute()
 const { refreshAuthUser, setSuppressProfileError } = useAuth()
 
 const form = reactive({
@@ -76,7 +77,9 @@ const handleSubmit = async () => {
     message.value = { type: 'success', text: 'Cuenta creada correctamente. Redirigiendo...' }
 
     setTimeout(() => {
-      router.push(isOwnerAccount.value ? '/panel-negocio' : '/mis-citas')
+      const defaultRedirect = isOwnerAccount.value ? '/panel-negocio' : '/mis-citas'
+      const redirectPath = String(route.query.redirect ?? defaultRedirect)
+      router.push(redirectPath)
     }, 800)
   } catch (error) {
     console.error('Registro falló. Código:', error?.code, 'Mensaje:', error?.message, error)
