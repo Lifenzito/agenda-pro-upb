@@ -183,7 +183,11 @@ const selectedWorker = computed(() =>
 )
 
 const clearForm = () => {
+  const lockedId = String(props.lockedBusinessId ?? '').trim()
   Object.assign(form, initialFormState)
+  if (lockedId) {
+    form.negocioId = lockedId
+  }
   countryCode.value = DEFAULT_COUNTRY_CODE
   localPhone.value = ''
   occupiedHours.value = []
@@ -195,7 +199,14 @@ const loadBusinesses = async () => {
   try {
     businesses.value = await getBusinesses()
 
-    if (props.mode === 'create' && !form.negocioId && businesses.value.length) {
+    const lockedId = String(props.lockedBusinessId ?? '').trim()
+
+    if (lockedId) {
+      // Si el negocio está bloqueado (página pública), nunca caer al primero alfabético.
+      if (form.negocioId !== lockedId) {
+        form.negocioId = lockedId
+      }
+    } else if (props.mode === 'create' && !form.negocioId && businesses.value.length) {
       form.negocioId = businesses.value[0].id
     }
   } catch (error) {
