@@ -24,6 +24,45 @@ const form = reactive({
 const loading = ref(false)
 const message = ref({ type: '', text: '' })
 
+const publicSlug = computed(() => String(props.business?.slug ?? '').trim())
+
+const publicUrl = computed(() => {
+  if (!publicSlug.value) return ''
+  if (typeof window === 'undefined') return `/negocio/${publicSlug.value}`
+  return `${window.location.origin}/negocio/${publicSlug.value}`
+})
+
+const copyState = ref('idle')
+
+const handleCopyPublicUrl = async () => {
+  if (!publicUrl.value) return
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(publicUrl.value)
+    } else {
+      const helper = document.createElement('textarea')
+      helper.value = publicUrl.value
+      helper.setAttribute('readonly', '')
+      helper.style.position = 'absolute'
+      helper.style.left = '-9999px'
+      document.body.appendChild(helper)
+      helper.select()
+      document.execCommand('copy')
+      document.body.removeChild(helper)
+    }
+    copyState.value = 'copied'
+    setTimeout(() => {
+      if (copyState.value === 'copied') copyState.value = 'idle'
+    }, 2000)
+  } catch (error) {
+    console.error(error)
+    copyState.value = 'error'
+    setTimeout(() => {
+      if (copyState.value === 'error') copyState.value = 'idle'
+    }, 2000)
+  }
+}
+
 watch(
   () => props.business,
   (business) => {
@@ -177,6 +216,28 @@ const handleSave = async () => {
         </label>
       </div>
 
+      <div v-if="publicSlug" class="public-link">
+        <div class="public-link__head">
+          <span class="public-link__label">Enlace público de tu negocio</span>
+          <button
+            type="button"
+            class="btn btn-secondary public-link__copy"
+            @click="handleCopyPublicUrl"
+          >
+            {{ copyState === 'copied' ? '¡Copiado!' : copyState === 'error' ? 'Error' : 'Copiar' }}
+          </button>
+        </div>
+        <a class="public-link__url" :href="publicUrl" target="_blank" rel="noopener">
+          {{ publicUrl }}
+        </a>
+        <p class="public-link__hint">
+          Compártelo en redes para que tus clientes agenden directamente en tu página pública.
+        </p>
+      </div>
+      <p v-else class="public-link public-link--missing">
+        Tu enlace público se generará automáticamente la próxima vez que abras el panel.
+      </p>
+
       <button class="btn btn-primary" type="submit" :disabled="loading">
         {{ loading ? 'Guardando...' : 'Guardar cambios' }}
       </button>
@@ -289,6 +350,50 @@ p {
 .feedback-message.error {
   background-color: rgba(179, 38, 30, 0.12);
   color: #b3261e;
+}
+
+.public-link {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: #f1f8f2;
+  border: 1px solid #c7dfd3;
+}
+
+.public-link__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.public-link__label {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.public-link__copy {
+  min-width: 92px;
+}
+
+.public-link__url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #1e7d32;
+  word-break: break-all;
+}
+
+.public-link__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #4f6a45;
+}
+
+.public-link--missing {
+  margin: 0;
+  color: #6b855f;
+  font-size: 0.85rem;
 }
 
 @media (max-width: 760px) {
