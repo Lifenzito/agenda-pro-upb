@@ -62,6 +62,40 @@ export const createBusiness = async ({ nombre, ownerId, ownerEmail }) => {
   }
 }
 
+// Backfill transparente: si el negocio no tiene slug guardado, lo genera y
+// lo persiste en Firestore para que /negocio/:slug funcione sin requerir
+// que el owner edite manualmente nada.
+const ensureBusinessSlug = async (business) => {
+  if (!business?.id) return business
+
+  const currentSlug = String(business.slug ?? '').trim()
+  if (currentSlug) return business
+
+  const candidateName = String(business.nombre ?? '').trim()
+  if (!candidateName) return business
+
+  try {
+    const generated = await generateUniqueSlug(candidateName, {
+      ignoreBusinessId: business.id
+    })
+
+    if (!generated) return business
+
+    await updateDoc(doc(db, 'negocios', business.id), {
+      slug: generated,
+      updatedAt: serverTimestamp()
+    })
+
+    return { ...business, slug: generated }
+  } catch (error) {
+    // El backfill nunca debe romper la carga del negocio: si falla la
+    // escritura (reglas, red, etc.), devolvemos el negocio sin slug y
+    // dejamos que la siguiente lectura lo vuelva a intentar.
+    console.error('No se pudo backfillear el slug del negocio:', error)
+    return business
+  }
+}
+
 export const getBusinessById = async (businessId) => {
   if (!businessId) return null
 
@@ -70,10 +104,12 @@ export const getBusinessById = async (businessId) => {
 
     if (!snapshot.exists()) return null
 
-    return {
+    const business = {
       id: snapshot.id,
       ...snapshot.data()
     }
+
+    return await ensureBusinessSlug(business)
   } catch (error) {
     console.error(error)
     throw error
@@ -137,10 +173,12 @@ export const getBusinessByOwnerId = async (ownerId) => {
     if (!snapshot.docs.length) return null
 
     const first = snapshot.docs[0]
-    return {
+    const business = {
       id: first.id,
       ...first.data()
     }
+
+    return await ensureBusinessSlug(business)
   } catch (error) {
     console.error(error)
     throw error
