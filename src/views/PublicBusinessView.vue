@@ -85,7 +85,13 @@ const loadBusiness = async (slug) => {
     }
   } catch (error) {
     console.error(error)
-    errorMessage.value = 'No se pudo cargar el negocio. Intenta nuevamente.'
+    const code = String(error?.code ?? '').toLowerCase()
+    if (code === 'permission-denied') {
+      errorMessage.value =
+        'Esta página pública no puede leer el negocio. El administrador debe habilitar lectura pública de las colecciones "negocios" y "trabajadores" en las reglas de Firestore.'
+    } else {
+      errorMessage.value = 'No se pudo cargar el negocio. Intenta nuevamente.'
+    }
   } finally {
     loading.value = false
   }
@@ -137,6 +143,26 @@ const goHome = () => {
     <template v-else-if="business">
       <PublicBusinessHeader :business="business" />
 
+      <aside v-if="showOwnerNotice" class="admin-pill">
+        <div class="admin-pill__text">
+          <strong>Vista de administrador</strong>
+          <span>Estás visualizando la página pública de tu negocio.</span>
+        </div>
+        <div class="admin-pill__actions">
+          <button class="btn btn-secondary btn-sm" type="button" @click="goToOwnerPanel">
+            Ir al panel
+          </button>
+          <button
+            class="btn btn-secondary btn-sm"
+            type="button"
+            :disabled="loggingOut"
+            @click="handleLogout"
+          >
+            {{ loggingOut ? 'Cerrando…' : 'Cerrar sesión' }}
+          </button>
+        </div>
+      </aside>
+
       <section class="panel-card info-card">
         <h2>Servicios</h2>
         <div v-if="services.length" class="chip-grid">
@@ -177,36 +203,19 @@ const goHome = () => {
         <p>Cargando tu sesión…</p>
       </section>
 
-      <section v-else-if="showOwnerNotice" class="panel-card auth-gate owner-notice">
-        <h2>Vista pública de administrador</h2>
-        <p>
-          Estás viendo tu página pública como administrador. Para agendar una cita, entra
-          con una cuenta de cliente.
-        </p>
-        <div class="auth-actions">
-          <button class="btn btn-primary" type="button" @click="goToOwnerPanel">
-            Ir al panel del negocio
-          </button>
-          <button
-            class="btn btn-secondary"
-            type="button"
-            :disabled="loggingOut"
-            @click="handleLogout"
-          >
-            {{ loggingOut ? 'Cerrando…' : 'Cerrar sesión' }}
-          </button>
-        </div>
+      <section v-else-if="showOwnerNotice" class="panel-card auth-gate owner-admin-empty">
+        <p>El formulario de reserva no está disponible para cuentas administrativas.</p>
       </section>
 
       <section v-else-if="showGuestCta" class="panel-card auth-gate guest-cta">
-        <h2>Agenda en {{ businessName }}</h2>
-        <p>Inicia sesión con una cuenta de cliente para reservar una cita en este negocio.</p>
+        <h2>Inicia sesión para agendar una cita con nosotros</h2>
+        <p>Accede con tu cuenta de cliente para reservar tu turno en este negocio.</p>
         <div class="auth-actions">
           <button class="btn btn-primary" type="button" @click="goToLogin">
-            Iniciar sesión para agendar
+            Iniciar sesión
           </button>
           <button class="btn btn-secondary" type="button" @click="goToRegister">
-            Crear cuenta de cliente
+            Crear cuenta
           </button>
         </div>
       </section>
@@ -353,8 +362,54 @@ const goHome = () => {
   margin-top: 0.4rem;
 }
 
-.owner-notice {
+.owner-admin-empty {
+  padding: 1rem 1.25rem;
+}
+
+.owner-admin-empty p {
+  color: #6b855f;
+  font-size: 0.9rem;
+}
+
+.admin-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
   border: 1px solid #c7dfd3;
   background: #f1f8f2;
+  font-size: 0.9rem;
+}
+
+.admin-pill__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.admin-pill__text strong {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.admin-pill__text span {
+  color: #4f6a45;
+  font-size: 0.85rem;
+}
+
+.admin-pill__actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 10px;
 }
 </style>
