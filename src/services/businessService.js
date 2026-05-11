@@ -4,18 +4,46 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   query,
   serverTimestamp,
   updateDoc,
   where
 } from 'firebase/firestore'
 import { db } from './firebase'
+import { slugify } from '../utils/slugify'
 
 const businessesCollection = collection(db, 'negocios')
 
+export const generateUniqueSlug = async (name, { ignoreBusinessId = '' } = {}) => {
+  const base = slugify(name)
+
+  if (!base) return ''
+
+  let candidate = base
+  let suffix = 1
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const slugQuery = query(businessesCollection, where('slug', '==', candidate), limit(2))
+    const snapshot = await getDocs(slugQuery)
+
+    const collision = snapshot.docs.find((docSnap) => docSnap.id !== ignoreBusinessId)
+
+    if (!collision) return candidate
+
+    suffix += 1
+    candidate = `${base}-${suffix}`
+  }
+}
+
 export const createBusiness = async ({ nombre, ownerId, ownerEmail }) => {
+  const cleanName = String(nombre ?? '').trim()
+  const slug = await generateUniqueSlug(cleanName)
+
   const payload = {
-    nombre: String(nombre ?? '').trim(),
+    nombre: cleanName,
+    slug,
     ownerId,
     ownerEmail: String(ownerEmail ?? '').trim().toLowerCase(),
     horarioInicio: '08:00',
@@ -46,6 +74,37 @@ export const getBusinessById = async (businessId) => {
       id: snapshot.id,
       ...snapshot.data()
     }
+  } catch (error) {
+    console.error(error)
+    throw error
+  }
+}
+
+export const getBusinessBySlug = async (slug) => {
+  const normalizedSlug = String(slug ?? '').trim().toLowerCase()
+
+  if (!normalizedSlug) return null
+
+  try {
+    const slugQuery = query(
+      businessesCollection,
+      where('slug', '==', normalizedSlug),
+      limit(1)
+    )
+    const snapshot = await getDocs(slugQuery)
+
+    if (!snapshot.empty) {
+      const first = snapshot.docs[0]
+      return {
+        id: first.id,
+        ...first.data()
+      }
+    }
+
+    // Fallback: si no existe el slug, intentar buscar por id directo
+    // (compatibilidad para negocios viejos sin slug guardado).
+    const byId = await getBusinessById(normalizedSlug)
+    return byId
   } catch (error) {
     console.error(error)
     throw error
@@ -92,10 +151,33 @@ export const updateBusiness = async (businessId, data) => {
   if (!businessId) throw new Error('business_id_required')
 
   try {
-    await updateDoc(doc(db, 'negocios', businessId), {
+    const payload = {
       ...data,
       updatedAt: serverTimestamp()
-    })
+    }
+
+    // Backfill: si el negocio se está actualizando y todavía no tiene slug,
+    // generarlo a partir del nombre actual o del nombre del payload.
+    const hasSlugInPayload = Object.prototype.hasOwnProperty.call(data, 'slug')
+
+    if (!hasSlugInPayload) {
+      const existing = await getBusinessById(businessId)
+      const currentSlug = String(existing?.slug ?? '').trim()
+
+      if (!currentSlug) {
+        const candidateName = String(data?.nombre ?? existing?.nombre ?? '').trim()
+        const generated = await generateUniqueSlug(candidateName, {
+          ignoreBusinessId: businessId
+        })
+
+        if (generated) {
+          payload.slug = generated
+        }
+      }
+    }
+
+    await updateDoc(doc(db, 'negocios', businessId), payload)
+    return payload.slug
   } catch (error) {
     console.error(error)
     throw error

@@ -6,6 +6,7 @@ import AdminView from '../views/AdminView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import MyAppointmentsView from '../views/MyAppointmentsView.vue'
+import PublicBusinessView from '../views/PublicBusinessView.vue'
 
 const routes = [
   {
@@ -17,6 +18,11 @@ const routes = [
     path: '/agendar',
     name: 'booking',
     component: BookingView
+  },
+  {
+    path: '/negocio/:slug',
+    name: 'public-business',
+    component: PublicBusinessView
   },
   {
     path: '/panel-negocio',

@@ -45,6 +45,10 @@ const props = defineProps({
   currentUser: {
     type: Object,
     default: null
+  },
+  lockedBusinessId: {
+    type: String,
+    default: ''
   }
 })
 
@@ -204,6 +208,17 @@ const loadBusinesses = async () => {
 
 loadBusinesses()
 
+watch(
+  () => props.lockedBusinessId,
+  (value) => {
+    const lockedId = String(value ?? '').trim()
+    if (lockedId) {
+      form.negocioId = lockedId
+    }
+  },
+  { immediate: true }
+)
+
 const loadWorkersByBusiness = async () => {
   if (!currentBusinessId.value) {
     activeWorkers.value = []
@@ -287,7 +302,8 @@ const loadOccupiedHours = async () => {
     occupiedHours.value = await getOccupiedHoursByDate(
       form.fecha,
       isEditing.value ? editingAppointmentId.value : '',
-      currentBusinessId.value
+      currentBusinessId.value,
+      form.trabajadorId
     )
   } catch (error) {
     console.error(error)
@@ -296,7 +312,7 @@ const loadOccupiedHours = async () => {
 }
 
 watch(
-  () => [form.fecha, currentBusinessId.value],
+  () => [form.fecha, currentBusinessId.value, form.trabajadorId],
   async () => {
     await loadOccupiedHours()
 
@@ -538,7 +554,7 @@ const handleCancelEdit = () => {
           />
         </div>
 
-        <label v-if="props.mode === 'create'" class="field field-full">
+        <label v-if="props.mode === 'create' && !props.lockedBusinessId" class="field field-full">
           <span>Negocio</span>
           <select v-model="form.negocioId" :disabled="isSubmitting || loadingBusinesses" required>
             <option value="" disabled>Selecciona un negocio</option>
