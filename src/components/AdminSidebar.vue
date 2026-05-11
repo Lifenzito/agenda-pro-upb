@@ -20,6 +20,11 @@ const menuItems = [
     description: 'Ver y cancelar citas de tu local'
   },
   {
+    id: 'calendar',
+    title: 'Calendario',
+    description: 'Vista mensual de tus citas'
+  },
+  {
     id: 'business-profile',
     title: 'Información del negocio',
     description: 'Configurar nombre, horarios y servicios'

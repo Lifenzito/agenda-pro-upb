@@ -65,7 +65,8 @@ export const createAppointment = async (appointmentData) => {
       appointmentData.fecha,
       appointmentData.hora,
       '',
-      appointmentData.negocioId
+      appointmentData.negocioId,
+      appointmentData.trabajadorId
     )
 
     if (hasConflict) {
@@ -133,7 +134,13 @@ export const updateAppointment = async (id, appointmentData) => {
 
   try {
     if (payload.fecha && payload.hora) {
-      const hasConflict = await isSlotOccupied(payload.fecha, payload.hora, id, payload.negocioId)
+      const hasConflict = await isSlotOccupied(
+        payload.fecha,
+        payload.hora,
+        id,
+        payload.negocioId,
+        payload.trabajadorId
+      )
 
       if (hasConflict) {
         const slotError = new Error(SLOT_TAKEN_ERROR)
@@ -236,9 +243,12 @@ export const getAppointmentsByUser = async (user) => {
 export const getOccupiedHoursByDate = async (
   fecha,
   excludedAppointmentId = '',
-  businessId = ''
+  businessId = '',
+  trabajadorId = ''
 ) => {
   if (!fecha) return []
+
+  const normalizedWorkerId = String(trabajadorId ?? '').trim()
 
   const slotsByDateQuery = businessId
     ? query(appointmentsCollection, where('negocioId', '==', String(businessId)))
@@ -250,6 +260,11 @@ export const getOccupiedHoursByDate = async (
     return snapshot.docs
       .filter((appointmentDoc) => appointmentDoc.id !== excludedAppointmentId)
       .filter((appointmentDoc) => appointmentDoc.data()?.fecha === fecha)
+      .filter((appointmentDoc) => {
+        if (!normalizedWorkerId) return true
+        const docWorkerId = String(appointmentDoc.data()?.trabajadorId ?? '').trim()
+        return docWorkerId === normalizedWorkerId
+      })
       .map((appointmentDoc) => appointmentDoc.data()?.hora)
       .filter(Boolean)
       .sort((a, b) => String(a).localeCompare(String(b)))
@@ -263,8 +278,11 @@ export const isSlotOccupied = async (
   fecha,
   hora,
   excludedAppointmentId = '',
-  businessId = ''
+  businessId = '',
+  trabajadorId = ''
 ) => {
+  const normalizedWorkerId = String(trabajadorId ?? '').trim()
+
   const slotsByDateQuery = businessId
     ? query(appointmentsCollection, where('negocioId', '==', String(businessId)))
     : query(appointmentsCollection, where('fecha', '==', fecha))
@@ -277,7 +295,13 @@ export const isSlotOccupied = async (
       const sameDate = data.fecha === fecha
       const sameHour = data.hora === hora
       const sameAppointment = appointmentDoc.id === excludedAppointmentId
-      return sameDate && sameHour && !sameAppointment
+
+      if (!sameDate || !sameHour || sameAppointment) return false
+
+      if (!normalizedWorkerId) return true
+
+      const docWorkerId = String(data.trabajadorId ?? '').trim()
+      return docWorkerId === normalizedWorkerId
     })
   } catch (error) {
     console.error(error)

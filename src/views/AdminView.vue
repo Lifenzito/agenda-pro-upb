@@ -5,6 +5,7 @@ import AdminDashboard from '../components/AdminDashboard.vue'
 import AppointmentList from '../components/AppointmentList.vue'
 import BusinessProfileCard from '../components/BusinessProfileCard.vue'
 import BusinessStaffManager from '../components/BusinessStaffManager.vue'
+import BusinessCalendar from '../components/BusinessCalendar.vue'
 import { useAuth } from '../composables/useAuth'
 import {
   deleteAppointment,
@@ -34,6 +35,7 @@ const sectionTitle = computed(() => {
   if (currentSection.value === 'business-profile') return 'Información del negocio'
   if (currentSection.value === 'appointments') return 'Gestionar citas'
   if (currentSection.value === 'staff') return 'Especialistas del negocio'
+  if (currentSection.value === 'calendar') return 'Calendario'
   return 'Resumen del negocio'
 })
 
@@ -50,12 +52,17 @@ const sectionDescription = computed(() => {
     return 'Administra el personal de tu negocio y su disponibilidad para asignar citas.'
   }
 
+  if (currentSection.value === 'calendar') {
+    return 'Visualiza tus citas en un calendario mensual y consulta el detalle por día.'
+  }
+
   return 'Supervisa la agenda y actividad principal de tu negocio desde un solo lugar.'
 })
 
 const isGeneralSection = computed(() => currentSection.value === 'general')
 const isProfileSection = computed(() => currentSection.value === 'business-profile')
 const isStaffSection = computed(() => currentSection.value === 'staff')
+const isCalendarSection = computed(() => currentSection.value === 'calendar')
 
 const resolveBusinessId = () => {
   if (profile.value?.negocioId) return profile.value.negocioId
@@ -199,6 +206,10 @@ const handleCancelAppointment = async (appointment) => {
           <p v-if="loadingBusiness">Cargando información del negocio...</p>
           <p v-else>No se encontró información del negocio asociado a esta cuenta.</p>
         </section>
+      </section>
+
+      <section v-else-if="isCalendarSection">
+        <BusinessCalendar :appointments="appointments" :loading="loadingAppointments" />
       </section>
 
       <section v-else-if="isStaffSection">
