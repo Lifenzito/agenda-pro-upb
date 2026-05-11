@@ -29,7 +29,7 @@ const links = computed(() => {
   }
 
   if (isClient.value) {
-    return [...baseLinks, { to: '/agendar', label: 'Agendar cita' }, { to: '/mis-citas', label: 'Mis citas' }]
+    return [...baseLinks, { to: '/mis-citas', label: 'Mis citas' }]
   }
 
   return baseLinks

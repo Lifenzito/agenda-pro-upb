@@ -1,36 +1,26 @@
 <script setup>
-import { RouterLink } from 'vue-router'
-import AppointmentForm from '../components/AppointmentForm.vue'
-import { useAuth } from '../composables/useAuth'
+import { useRouter } from 'vue-router'
 
-const { user, isAuthenticated } = useAuth()
+const router = useRouter()
+
+const goHome = () => {
+  router.push('/')
+}
 </script>
 
 <template>
   <section class="booking-view app-container">
     <header class="view-header">
       <h1>Agendar cita</h1>
-      <p>Reserva tu turno, elige especialista disponible y consulta tu cita por teléfono para reagendar o cancelar.</p>
     </header>
 
-    <AppointmentForm
-      mode="create"
-      card-title="Nueva cita"
-      card-description="Selecciona un negocio y completa los datos para registrar la cita."
-      :current-user="user"
-    />
-
-    <div v-if="!isAuthenticated" class="panel-card auth-priority-note">
-      <h2>¿Ya tienes cuenta?</h2>
-      <p>
-        Puedes agendar de forma pública, pero si inicias sesión podrás gestionar tus citas desde
-        tu panel personal.
-      </p>
-      <div class="auth-actions">
-        <RouterLink class="btn btn-primary" to="/login">Ir a login</RouterLink>
-        <RouterLink class="btn btn-secondary" to="/registro">Ir a registro</RouterLink>
+    <article class="panel-card info-card">
+      <p class="lead">Para agendar una cita, ingresa desde el enlace público del negocio.</p>
+      <p>Puedes solicitar el enlace al negocio o acceder desde sus redes sociales.</p>
+      <div class="actions">
+        <button class="btn btn-primary" type="button" @click="goHome">Volver al inicio</button>
       </div>
-    </div>
+    </article>
   </section>
 </template>
 
@@ -46,24 +36,27 @@ const { user, isAuthenticated } = useAuth()
   color: var(--primary);
 }
 
-.view-header p {
-  margin: 0.45rem 0 0;
-  color: #4f6a45;
+.info-card {
+  display: grid;
+  gap: 0.6rem;
 }
 
-.auth-priority-note h2 {
+.info-card .lead {
   margin: 0;
   color: var(--primary);
+  font-weight: 600;
+  font-size: 1.05rem;
 }
 
-.auth-priority-note p {
-  margin: 0.55rem 0 0.9rem;
+.info-card p {
+  margin: 0;
   color: #4f6a45;
 }
 
-.auth-actions {
+.actions {
+  margin-top: 0.4rem;
   display: flex;
-  flex-wrap: wrap;
   gap: 0.6rem;
+  flex-wrap: wrap;
 }
 </style>
