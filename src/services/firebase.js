@@ -5,6 +5,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { initializeFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyDV7oF4CnK498Y06ZcQ6r0NFcmc2hEfRkU',
@@ -21,5 +22,6 @@ const db = initializeFirestore(app, {
   experimentalAutoDetectLongPolling: true,
   useFetchStreams: false
 })
+const storage = getStorage(app)
 
-export { app, auth, db }
+export { app, auth, db, storage }

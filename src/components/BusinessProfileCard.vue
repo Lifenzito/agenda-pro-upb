@@ -4,6 +4,8 @@
  * Muestra y permite editar datos generales, horarios y servicios del establecimiento.
  */
 import { computed, reactive, ref, watch } from 'vue'
+import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
+import { storage } from '../services/firebase'
 
 const props = defineProps({
   business: {
@@ -27,6 +29,11 @@ const form = reactive({
 
 const loading = ref(false)
 const message = ref({ type: '', text: '' })
+const profileUploading = ref(false)
+const bannerUploading = ref(false)
+const IMAGE_ACCEPT = '.jpg,.jpeg,.png,.webp'
+
+const isUploadingMedia = computed(() => profileUploading.value || bannerUploading.value)
 
 const publicSlug = computed(() => String(props.business?.slug ?? '').trim())
 
@@ -100,8 +107,88 @@ const bannerPreview = computed(() =>
   isValidUrl(form.banner) ? String(form.banner ?? '').trim() : ''
 )
 
+const sanitizeFilename = (name) =>
+  String(name ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9._-]/g, '')
+
+const isAllowedImageFile = (file) => {
+  const fileName = String(file?.name ?? '').toLowerCase()
+  const validExtension = /\.(jpg|jpeg|png|webp)$/.test(fileName)
+  const validMimeType = ['image/jpeg', 'image/png', 'image/webp'].includes(file?.type)
+  return validExtension || validMimeType
+}
+
+const uploadBusinessImage = async (file, folder) => {
+  const safeName = sanitizeFilename(file.name) || 'image'
+  const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${safeName}`
+  const imageRef = storageRef(storage, `business-images/${folder}/${uniqueName}`)
+
+  await uploadBytes(imageRef, file, {
+    contentType: file.type || 'application/octet-stream'
+  })
+
+  return getDownloadURL(imageRef)
+}
+
+const handleMediaUpload = async (event, type) => {
+  const target = event.target
+  const file = target?.files?.[0]
+
+  if (!file) return
+
+  if (!isAllowedImageFile(file)) {
+    message.value = {
+      type: 'error',
+      text: 'Formato no válido. Usa imágenes .jpg, .jpeg, .png o .webp.'
+    }
+    target.value = ''
+    return
+  }
+
+  const isProfile = type === 'profile'
+  if (isProfile) {
+    profileUploading.value = true
+  } else {
+    bannerUploading.value = true
+  }
+
+  message.value = { type: '', text: 'Subiendo imagen...' }
+
+  try {
+    const folder = isProfile ? 'profile' : 'banner'
+    const imageUrl = await uploadBusinessImage(file, folder)
+
+    if (isProfile) {
+      form.fotoPerfil = imageUrl
+    } else {
+      form.banner = imageUrl
+    }
+
+    message.value = {
+      type: 'success',
+      text: 'Imagen subida correctamente. Guarda los cambios para aplicarla.'
+    }
+  } catch (error) {
+    console.error(error)
+    message.value = {
+      type: 'error',
+      text: 'No se pudo subir la imagen. Intenta nuevamente.'
+    }
+  } finally {
+    if (isProfile) {
+      profileUploading.value = false
+    } else {
+      bannerUploading.value = false
+    }
+    target.value = ''
+  }
+}
+
 const handleSave = async () => {
-  if (loading.value) return
+  if (loading.value || isUploadingMedia.value) return
 
   message.value = { type: '', text: '' }
 
@@ -199,6 +286,13 @@ const handleSave = async () => {
             placeholder="https://..."
             :disabled="loading"
           />
+          <input
+            type="file"
+            :accept="IMAGE_ACCEPT"
+            :disabled="loading || isUploadingMedia"
+            @change="(event) => handleMediaUpload(event, 'profile')"
+          />
+          <small v-if="profileUploading" class="upload-status">Subiendo imagen...</small>
           <div class="media-preview profile" aria-hidden="true">
             <img v-if="profilePreview" :src="profilePreview" alt="Vista previa de la foto de perfil" />
             <span v-else class="media-placeholder">Sin foto de perfil</span>
@@ -213,6 +307,13 @@ const handleSave = async () => {
             placeholder="https://..."
             :disabled="loading"
           />
+          <input
+            type="file"
+            :accept="IMAGE_ACCEPT"
+            :disabled="loading || isUploadingMedia"
+            @change="(event) => handleMediaUpload(event, 'banner')"
+          />
+          <small v-if="bannerUploading" class="upload-status">Subiendo imagen...</small>
           <div class="media-preview banner" aria-hidden="true">
             <img v-if="bannerPreview" :src="bannerPreview" alt="Vista previa del banner" />
             <span v-else class="media-placeholder">Sin banner</span>
@@ -242,7 +343,7 @@ const handleSave = async () => {
         Tu enlace público se generará automáticamente la próxima vez que abras el panel.
       </p>
 
-      <button class="btn btn-primary" type="submit" :disabled="loading">
+      <button class="btn btn-primary" type="submit" :disabled="loading || isUploadingMedia">
         {{ loading ? 'Guardando...' : 'Guardar cambios' }}
       </button>
 
@@ -337,6 +438,11 @@ p {
 .media-placeholder {
   padding: 0 0.4rem;
   text-align: center;
+}
+
+.upload-status {
+  font-size: 0.8rem;
+  color: #4f6a45;
 }
 
 .feedback-message {
