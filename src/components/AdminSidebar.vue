@@ -37,6 +37,11 @@ const menuItems = [
     id: 'staff',
     title: 'Especialistas del negocio',
     description: 'Agregar, editar y activar tu equipo'
+  },
+  {
+    id: 'staff-appointments',
+    title: 'Citas por especialista',
+    description: 'Ver citas futuras de cada especialista'
   }
 ]
 </script>

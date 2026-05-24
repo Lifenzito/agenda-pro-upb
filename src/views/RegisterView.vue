@@ -188,7 +188,9 @@ const handleSubmit = async () => {
 
       <p class="helper-text">
         ¿Ya tienes cuenta?
-        <RouterLink to="/login">Iniciar sesión</RouterLink>
+        <RouterLink :to="{ path: '/login', query: route.query.redirect ? { redirect: route.query.redirect } : {} }">
+          Iniciar sesión
+        </RouterLink>
       </p>
     </article>
   </section>

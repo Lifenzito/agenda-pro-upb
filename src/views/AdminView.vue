@@ -10,6 +10,7 @@ import AppointmentList from '../components/AppointmentList.vue'
 import BusinessProfileCard from '../components/BusinessProfileCard.vue'
 import BusinessStaffManager from '../components/BusinessStaffManager.vue'
 import BusinessCalendar from '../components/BusinessCalendar.vue'
+import StaffAppointments from '../components/StaffAppointments.vue'
 import { useAuth } from '../composables/useAuth'
 import {
   deleteAppointment,
@@ -20,6 +21,7 @@ import {
   getBusinessByOwnerId,
   updateBusiness
 } from '../services/businessService'
+import { getActiveStaffByBusiness } from '../services/staffService'
 
 const appointments = ref([])
 const loadingAppointments = ref(true)
@@ -29,6 +31,7 @@ const listSuccessMessage = ref('')
 const currentSection = ref('general')
 const business = ref(null)
 const loadingBusiness = ref(true)
+const workers = ref([])
 
 const { user, profile, initAuth } = useAuth()
 
@@ -40,6 +43,7 @@ const sectionTitle = computed(() => {
   if (currentSection.value === 'appointments') return 'Gestionar citas'
   if (currentSection.value === 'staff') return 'Especialistas del negocio'
   if (currentSection.value === 'calendar') return 'Calendario'
+  if (currentSection.value === 'staff-appointments') return 'Citas por especialista'
   return 'Resumen del negocio'
 })
 
@@ -60,6 +64,10 @@ const sectionDescription = computed(() => {
     return 'Visualiza tus citas en un calendario mensual y consulta el detalle por día.'
   }
 
+  if (currentSection.value === 'staff-appointments') {
+    return 'Consulta las citas futuras asignadas a cada especialista. Las citas pasadas se ocultan automáticamente.'
+  }
+
   return 'Supervisa la agenda y actividad principal de tu negocio desde un solo lugar.'
 })
 
@@ -67,6 +75,7 @@ const isGeneralSection = computed(() => currentSection.value === 'general')
 const isProfileSection = computed(() => currentSection.value === 'business-profile')
 const isStaffSection = computed(() => currentSection.value === 'staff')
 const isCalendarSection = computed(() => currentSection.value === 'calendar')
+const isStaffAppointmentsSection = computed(() => currentSection.value === 'staff-appointments')
 
 const resolveBusinessId = () => {
   if (profile.value?.negocioId) return profile.value.negocioId
@@ -121,6 +130,15 @@ onMounted(() => {
       }
 
       subscribeBusinessAppointments(business.value?.id ?? '')
+
+      if (business.value?.id) {
+        try {
+          workers.value = await getActiveStaffByBusiness(business.value.id)
+        } catch (workerError) {
+          console.error(workerError)
+          workers.value = []
+        }
+      }
     } catch (error) {
       console.error(error)
       listErrorMessage.value = 'No se pudo cargar la información del negocio. Intenta nuevamente.'
@@ -227,6 +245,14 @@ const handleCancelAppointment = async (appointment) => {
           <p v-if="loadingBusiness">Cargando información del negocio...</p>
           <p v-else>No se encontró información del negocio asociado a esta cuenta.</p>
         </section>
+      </section>
+
+      <section v-else-if="isStaffAppointmentsSection">
+        <StaffAppointments
+          :appointments="appointments"
+          :workers="workers"
+          :loading="loadingAppointments"
+        />
       </section>
 
       <section v-else id="admin-list">
