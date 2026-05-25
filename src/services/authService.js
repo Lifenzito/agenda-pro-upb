@@ -5,8 +5,10 @@
 import {
   createUserWithEmailAndPassword,
   deleteUser,
+  GoogleAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile
 } from 'firebase/auth'
@@ -122,6 +124,35 @@ export const registerUser = async ({
   }
 
   return currentUser
+}
+
+const googleProvider = new GoogleAuthProvider()
+
+export const loginWithGoogle = async () => {
+  const result = await signInWithPopup(auth, googleProvider)
+  const firebaseUser = result.user
+
+  const userDocRef = doc(db, 'usuarios', firebaseUser.uid)
+  const existingProfile = await getDoc(userDocRef)
+
+  if (!existingProfile.exists()) {
+    await setDoc(
+      userDocRef,
+      {
+        uid: firebaseUser.uid,
+        nombre: String(firebaseUser.displayName ?? '').trim(),
+        email: String(firebaseUser.email ?? '').trim().toLowerCase(),
+        photoURL: String(firebaseUser.photoURL ?? '').trim(),
+        role: ROLE_CLIENTE,
+        negocioId: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      },
+      { merge: true }
+    )
+  }
+
+  return firebaseUser
 }
 
 export const loginUser = async ({ correo, password }) => {
