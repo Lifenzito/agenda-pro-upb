@@ -12,6 +12,8 @@ import RegisterView from '../views/RegisterView.vue'
 import MyAppointmentsView from '../views/MyAppointmentsView.vue'
 import PublicBusinessView from '../views/PublicBusinessView.vue'
 import RecentBusinessesView from '../views/RecentBusinessesView.vue'
+import PrivacyPolicyView from '../views/PrivacyPolicyView.vue'
+import TermsView from '../views/TermsView.vue'
 
 const routes = [
   {
@@ -75,6 +77,16 @@ const routes = [
     meta: {
       guestOnly: true
     }
+  },
+  {
+    path: '/privacidad',
+    name: 'privacy-policy',
+    component: PrivacyPolicyView
+  },
+  {
+    path: '/terminos',
+    name: 'terms',
+    component: TermsView
   }
 ]
 
