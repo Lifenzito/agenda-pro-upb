@@ -11,6 +11,7 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import MyAppointmentsView from '../views/MyAppointmentsView.vue'
 import PublicBusinessView from '../views/PublicBusinessView.vue'
+import RecentBusinessesView from '../views/RecentBusinessesView.vue'
 
 const routes = [
   {
@@ -45,6 +46,15 @@ const routes = [
     path: '/mis-citas',
     name: 'my-appointments',
     component: MyAppointmentsView,
+    meta: {
+      requiresAuth: true,
+      clientOnly: true
+    }
+  },
+  {
+    path: '/tiendas-recientes',
+    name: 'recent-businesses',
+    component: RecentBusinessesView,
     meta: {
       requiresAuth: true,
       clientOnly: true

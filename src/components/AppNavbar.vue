@@ -33,7 +33,11 @@ const links = computed(() => {
   }
 
   if (isClient.value) {
-    return [...baseLinks, { to: '/mis-citas', label: 'Mis citas' }]
+    return [
+      ...baseLinks,
+      { to: '/mis-citas', label: 'Mis citas' },
+      { to: '/tiendas-recientes', label: 'Tiendas recientes' }
+    ]
   }
 
   return baseLinks
